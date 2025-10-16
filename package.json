@@ -1,5 +1,6 @@
 {
   "name": "money-admin",
+  "homepage": "https://github.com/money-admin/money-admin",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -7,7 +8,9 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+        "deploy": "gh-pages -d dist",
+    "deploy:ci": "npm run build"
   },
   "dependencies": {
     "firebase": "^12.4.0",
