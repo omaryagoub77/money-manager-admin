@@ -6,12 +6,9 @@ const Home = () => {
   const routes = [
     { name: 'Dashboard', path: '/dashboard', description: 'View overall statistics and metrics' },
     { name: 'Deposits', path: '/deposits', description: 'Manage customer deposits and transactions (Admin)' },
-    { name: 'My Deposits', path: '/my-deposits', description: 'View your deposit history and status' },
     { name: 'Cash Outs', path: '/cashouts', description: 'Manage customer cash out requests (Admin)' },
-    { name: 'My Cash Outs', path: '/my-cashouts', description: 'View your cash out history and status' },
     { name: 'Chat', path: '/chat', description: 'Interact with customers in real-time' },
     { name: 'Profile', path: '/profile', description: 'Manage your profile information' },
-    { name: 'Debug', path: '/debug', description: 'Debug Firestore data issues', adminOnly: true },
   ];
 
   return (

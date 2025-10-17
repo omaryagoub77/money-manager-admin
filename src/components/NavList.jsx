@@ -50,14 +50,6 @@ const NavList = () => {
               {item.name}
             </Link>
           ))}
-          {location.pathname === '/debug' && (
-            <Link
-              to="/debug"
-              className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${getLinkClass('/debug')}`}
-            >
-              {debugItem.name}
-            </Link>
-          )}
           {currentUser && (
             <button
               onClick={handleLogout}
