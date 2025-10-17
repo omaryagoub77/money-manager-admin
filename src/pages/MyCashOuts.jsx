@@ -52,7 +52,7 @@ const MyCashOuts = () => {
       },
       (err) => {
         console.error("MyCashOuts: Firebase error:", err);
-        console.error("MyCashOuts: Firebase error code:", err.code);
+        // console.error("MyCashOuts: Firebase error code:", err.code);
         console.error("MyCashOuts: Firebase error message:", err.message);
         
         if (err.code === 'permission-denied') {
