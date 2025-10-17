@@ -10,8 +10,15 @@ const NavList = () => {
   const navItems = [
     { name: 'Dashboard', path: '/dashboard' },
     { name: 'Deposits', path: '/deposits' },
+    { name: 'My Deposits', path: '/my-deposits' },
+    { name: 'Cash Outs', path: '/cashouts' },
+    { name: 'My Cash Outs', path: '/my-cashouts' },
     { name: 'Chat', path: '/chat' },
+    { name: 'Profile', path: '/profile' },
   ];
+
+  // Only show debug link when on the debug page
+  const debugItem = { name: 'Debug', path: '/debug' };
 
   const getLinkClass = (path) => {
     return location.pathname === path
@@ -45,6 +52,14 @@ const NavList = () => {
               {item.name}
             </Link>
           ))}
+          {location.pathname === '/debug' && (
+            <Link
+              to="/debug"
+              className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${getLinkClass('/debug')}`}
+            >
+              {debugItem.name}
+            </Link>
+          )}
           {currentUser && (
             <button
               onClick={handleLogout}

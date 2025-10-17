@@ -1,59 +1,64 @@
 import React, { useEffect, useState } from "react";
-import { collection, onSnapshot, orderBy, query, updateDoc, doc } from "firebase/firestore";
+import { collection, query, where, orderBy, onSnapshot } from "firebase/firestore";
 import { db } from "../firebaseConfig";
+import { useAuth } from "../context/AuthContext";
 import Layout from "../components/Layout";
 
-const CashOut = () => {
-  const [cashouts, setCashouts] = useState([]);
+const MyDeposits = () => {
+  const [deposits, setDeposits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { currentUser } = useAuth();
 
   useEffect(() => {
-    console.log("CashOut: Starting data fetch...");
+    if (!currentUser) {
+      setLoading(false);
+      return;
+    }
+
+    console.log("MyDeposits: Starting data fetch for user:", currentUser.uid);
     
-    // Real-time listener for cashouts, ordered by timestamp descending
-    const q = query(collection(db, "cashouts"), orderBy("timestamp", "desc"));
+    // Real-time listener for deposits for the current user
+    const q = query(
+      collection(db, "deposits"),
+      where("userId", "==", currentUser.uid),
+      orderBy("timestamp", "desc")
+    );
     
     const unsub = onSnapshot(q, 
       (snapshot) => {
         try {
-          console.log("CashOut: Snapshot received");
-          console.log("CashOut: Number of docs in snapshot:", snapshot.docs.length);
-          
-          if (snapshot.docs.length === 0) {
-            console.log("CashOut: No documents found in 'cashouts' collection");
-          }
+          console.log("MyDeposits: Snapshot received");
+          console.log("MyDeposits: Number of docs in snapshot:", snapshot.docs.length);
           
           const data = snapshot.docs.map((doc) => {
             const docData = doc.data();
-            console.log("CashOut: Document ID:", doc.id, "Data:", docData);
+            console.log("MyDeposits: Document ID:", doc.id, "Data:", docData);
             return {
               id: doc.id,
               ...docData,
             };
           });
           
-          console.log("CashOut: Processed data:", data);
-          setCashouts(data);
+          console.log("MyDeposits: Processed data:", data);
+          setDeposits(data);
           setLoading(false);
-          console.log("CashOut: Data fetch completed");
+          console.log("MyDeposits: Data fetch completed");
         } catch (err) {
-          console.error("CashOut: Error processing snapshot:", err);
-          setError("Error processing cashout data: " + err.message);
+          console.error("MyDeposits: Error processing snapshot:", err);
+          setError("Error processing deposit data: " + err.message);
           setLoading(false);
         }
       },
       (err) => {
-        console.error("CashOut: Firebase error:", err);
-        console.error("CashOut: Firebase error code:", err.code);
-        console.error("CashOut: Firebase error message:", err.message);
+        console.error("MyDeposits: Firebase error:", err);
+        console.error("MyDeposits: Firebase error code:", err.code);
+        console.error("MyDeposits: Firebase error message:", err.message);
         
         if (err.code === 'permission-denied') {
           setError("Permission denied. Check Firestore security rules.");
-        } else if (err.code === 'not-found') {
-          setError("Collection 'cashouts' not found.");
         } else {
-          setError("Failed to load cashouts: " + err.message);
+          setError("Failed to load deposits: " + err.message);
         }
         
         setLoading(false);
@@ -61,10 +66,10 @@ const CashOut = () => {
     );
 
     return () => {
-      console.log("CashOut: Unsubscribing from listener");
+      console.log("MyDeposits: Unsubscribing from listener");
       unsub();
     };
-  }, []);
+  }, [currentUser]);
 
   const getStatusClass = (status) => {
     switch (status) {
@@ -76,20 +81,6 @@ const CashOut = () => {
         return "bg-yellow-100 text-yellow-800";
       default:
         return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  // Function to update cashout status
-  const updateCashoutStatus = async (cashoutId, newStatus) => {
-    try {
-      const cashoutRef = doc(db, "cashouts", cashoutId);
-      await updateDoc(cashoutRef, {
-        status: newStatus
-      });
-      console.log(`Cashout ${cashoutId} status updated to ${newStatus}`);
-    } catch (err) {
-      console.error("Error updating cashout status:", err);
-      setError("Failed to update cashout status: " + err.message);
     }
   };
 
@@ -119,7 +110,7 @@ const CashOut = () => {
           <header>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <h1 className="text-3xl font-bold leading-tight text-gray-900">
-                Cash Out Management
+                My Deposits
               </h1>
             </div>
           </header>
@@ -127,7 +118,7 @@ const CashOut = () => {
             <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
               <div className="px-4 py-8 sm:px-0">
                 <div className="bg-white shadow overflow-hidden sm:rounded-lg p-6 text-center">
-                  <p>Loading cashouts...</p>
+                  <p>Loading your deposits...</p>
                 </div>
               </div>
             </div>
@@ -144,7 +135,7 @@ const CashOut = () => {
           <header>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <h1 className="text-3xl font-bold leading-tight text-gray-900">
-                Cash Out Management
+                My Deposits
               </h1>
             </div>
           </header>
@@ -168,7 +159,32 @@ const CashOut = () => {
     );
   }
 
-  console.log("CashOut: Rendering with cashouts array length:", cashouts.length);
+  if (!currentUser) {
+    return (
+      <Layout>
+        <div className="py-10">
+          <header>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <h1 className="text-3xl font-bold leading-tight text-gray-900">
+                My Deposits
+              </h1>
+            </div>
+          </header>
+          <main>
+            <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+              <div className="px-4 py-8 sm:px-0">
+                <div className="bg-white shadow overflow-hidden sm:rounded-lg p-6 text-center">
+                  <p>Please log in to view your deposits.</p>
+                </div>
+              </div>
+            </div>
+          </main>
+        </div>
+      </Layout>
+    );
+  }
+
+  console.log("MyDeposits: Rendering with deposits array length:", deposits.length);
 
   return (
     <Layout>
@@ -176,7 +192,7 @@ const CashOut = () => {
         <header>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h1 className="text-3xl font-bold leading-tight text-gray-900">
-              Cash Out Management
+              My Deposits
             </h1>
           </div>
         </header>
@@ -187,10 +203,10 @@ const CashOut = () => {
               <div className="bg-white shadow overflow-hidden sm:rounded-lg">
                 <div className="px-4 py-5 sm:px-6">
                   <h3 className="text-lg leading-6 font-medium text-gray-900">
-                    Recent Cash Outs
+                    Your Deposit History
                   </h3>
                   <p className="mt-1 text-sm text-gray-500">
-                    Total cash outs: {cashouts.length}
+                    Total deposits: {deposits.length}
                   </p>
 
                   <div className="mt-4 flex flex-col">
@@ -201,9 +217,6 @@ const CashOut = () => {
                             <thead className="bg-gray-50">
                               <tr>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                  User ID
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                   Amount
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -213,65 +226,63 @@ const CashOut = () => {
                                   Date
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                  Status
+                                  Image
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                  Actions
+                                  Status
                                 </th>
                               </tr>
                             </thead>
 
                             <tbody className="bg-white divide-y divide-gray-200">
-                              {cashouts.length > 0 ? (
-                                cashouts.map((cashout) => (
-                                  <tr key={cashout.id}>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                      <div className="text-sm text-gray-900">{cashout.userId || 'N/A'}</div>
-                                    </td>
+                              {deposits.length > 0 ? (
+                                deposits.map((deposit) => (
+                                  <tr key={deposit.id}>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                       <div className="text-sm text-gray-900">
-                                        ${cashout.amount ? parseFloat(cashout.amount).toFixed(2) : '0.00'}
+                                        ${deposit.amount ? parseFloat(deposit.amount).toFixed(2) : '0.00'}
                                       </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                      <div className="text-sm text-gray-900">{cashout.message || 'No message'}</div>
+                                      <div className="text-sm text-gray-900">{deposit.message || 'No message'}</div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                       <div className="text-sm text-gray-900">
-                                        {formatTimestamp(cashout.timestamp)}
+                                        {formatTimestamp(deposit.timestamp)}
                                       </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                      {deposit.imageUrl && (
+                                        <img
+                                          src={deposit.imageUrl}
+                                          alt="Deposit Proof"
+                                          className="w-16 h-16 object-cover rounded"
+                                          onError={(e) => {
+                                            e.target.style.display = 'none';
+                                          }}
+                                        />
+                                      )}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                       <span
                                         className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(
-                                          cashout.status || "Pending"
+                                          deposit.status || "Pending"
                                         )}`}
                                       >
-                                        {cashout.status || "Pending"}
+                                        {deposit.status || "Pending"}
                                       </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                      <div className="flex space-x-2">
-                                        <button
-                                          onClick={() => updateCashoutStatus(cashout.id, "Accepted")}
-                                          className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
-                                        >
-                                          Accept
-                                        </button>
-                                        <button
-                                          onClick={() => updateCashoutStatus(cashout.id, "Denied")}
-                                          className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-                                        >
-                                          Deny
-                                        </button>
+                                      <div className="text-xs text-gray-500 mt-1">
+                                        {deposit.status === "Pending" && "Waiting for admin approval"}
+                                        {deposit.status === "Accepted" && "Approved"}
+                                        {deposit.status === "Denied" && "Rejected"}
                                       </div>
                                     </td>
                                   </tr>
                                 ))
                               ) : (
                                 <tr>
-                                  <td colSpan="6" className="text-center py-6 text-gray-500">
-                                    No cash outs yet.
+                                  <td colSpan="5" className="text-center py-6 text-gray-500">
+                                    You haven't made any deposits yet.
                                   </td>
                                 </tr>
                               )}
@@ -292,4 +303,4 @@ const CashOut = () => {
   );
 };
 
-export default CashOut;
+export default MyDeposits;
