@@ -7,10 +7,8 @@ import Dashboard from './pages/Dashboard';
 import DepositsPage from './pages/DepositsPage';
 import ChatPage from './pages/ChatPage';
 import Home from './pages/Home';
-import MyDeposits from './pages/MyDeposits';
 import CashOut from './pages/CashOut';
-import MyCashOuts from './pages/MyCashOuts';
-import FirestoreDebug from './pages/FirestoreDebug';
+
 import './App.css';
 
 function App() {
@@ -24,11 +22,8 @@ function App() {
           <Route path="/signup" element={<SignUP />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/deposits" element={<DepositsPage />} />
-          <Route path="/my-deposits" element={<MyDeposits />} />
           <Route path="/cashouts" element={<CashOut />} />
-          <Route path="/my-cashouts" element={<MyCashOuts />} />
           <Route path="/chat" element={<ChatPage />} />
-          <Route path="/debug" element={<FirestoreDebug />} />
         </Routes>
       </div>
     </Router>

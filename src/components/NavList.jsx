@@ -10,9 +10,7 @@ const NavList = () => {
   const navItems = [
     { name: 'Dashboard', path: '/dashboard' },
     { name: 'Deposits', path: '/deposits' },
-    { name: 'My Deposits', path: '/my-deposits' },
     { name: 'Cash Outs', path: '/cashouts' },
-    { name: 'My Cash Outs', path: '/my-cashouts' },
     { name: 'Chat', path: '/chat' },
     { name: 'Profile', path: '/profile' },
   ];

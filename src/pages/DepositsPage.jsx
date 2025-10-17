@@ -217,12 +217,6 @@ const DepositsPage = () => {
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                   Image
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                  Status
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                  Actions
-                                </th>
                               </tr>
                             </thead>
 
@@ -258,39 +252,8 @@ const DepositsPage = () => {
                                         />
                                       )}
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                      <span
-                                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(
-                                          deposit.status || "Pending"
-                                        )}`}
-                                      >
-                                        {deposit.status || "Pending"}
-                                      </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                      {(!deposit.status || deposit.status === "Pending") && (
-                                        <div className="flex space-x-2">
-                                          <button
-                                            onClick={() => updateDepositStatus(deposit.id, "Accepted")}
-                                            className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
-                                          >
-                                            Accept
-                                          </button>
-                                          <button
-                                            onClick={() => updateDepositStatus(deposit.id, "Denied")}
-                                            className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-                                          >
-                                            Deny
-                                          </button>
-                                        </div>
-                                      )}
-                                      {deposit.status === "Accepted" && (
-                                        <span className="text-green-600">Accepted</span>
-                                      )}
-                                      {deposit.status === "Denied" && (
-                                        <span className="text-red-600">Denied</span>
-                                      )}
-                                    </td>
+               
+                                    
                                   </tr>
                                 ))
                               ) : (

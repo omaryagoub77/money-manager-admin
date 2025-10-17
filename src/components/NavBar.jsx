@@ -37,14 +37,8 @@ const NavBar = () => {
               <Link to="/deposits" className={getLinkClass('/deposits')}>
                 Deposits
               </Link>
-              <Link to="/my-deposits" className={getLinkClass('/my-deposits')}>
-                My Deposits
-              </Link>
               <Link to="/cashouts" className={getLinkClass('/cashouts')}>
                 Cash Outs
-              </Link>
-              <Link to="/my-cashouts" className={getLinkClass('/my-cashouts')}>
-                My Cash Outs
               </Link>
               <Link to="/chat" className={getLinkClass('/chat')}>
                 Chat
@@ -52,11 +46,7 @@ const NavBar = () => {
               <Link to="/profile" className={getLinkClass('/profile')}>
                 Profile
               </Link>
-              {location.pathname === '/debug' && (
-                <Link to="/debug" className={getLinkClass('/debug')}>
-                  Debug
-                </Link>
-              )}
+      
             </div>
           </div>
           <div className="flex items-center">
