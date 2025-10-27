@@ -1,12 +1,24 @@
 import React, { useEffect, useState } from "react";
 import { collection, onSnapshot, orderBy, query, updateDoc, doc } from "firebase/firestore";
 import { db } from "../firebaseConfig";
-import Layout from "../components/Layout";
+import { 
+  CreditCard, 
+  CheckCircle, 
+  XCircle, 
+  Clock, 
+  Search,
+  Filter,
+  Wallet,
+  Banknote
+} from "lucide-react";
 
 const CashOut = () => {
   const [cashouts, setCashouts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [processing, setProcessing] = useState({});
 
   useEffect(() => {
     console.log("CashOut: Starting data fetch...");
@@ -112,184 +124,264 @@ const CashOut = () => {
     return timestamp.toString();
   };
 
+  // Calculate stats
+  const totalCashouts = cashouts.reduce((sum, cashout) => sum + (parseFloat(cashout.amount) || 0), 0);
+  const pendingCashouts = cashouts.filter(cashout => cashout.status === 'pending').length;
+  const paidCashouts = cashouts.filter(cashout => cashout.status === 'Accepted').length;
+  const declinedCashouts = cashouts.filter(cashout => cashout.status === 'Denied').length;
+
+  // Filter cashouts based on search term and status filter
+  const filteredCashouts = cashouts.filter(cashout => {
+    const matchesSearch = cashout.userId?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          cashout.message?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'All' || cashout.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
   if (loading) {
     return (
-      <Layout>
-        <div className="py-10">
-          <header>
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <h1 className="text-3xl font-bold leading-tight text-gray-900">
-                Cash Out Management
-              </h1>
-            </div>
-          </header>
-          <main>
-            <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-              <div className="px-4 py-8 sm:px-0">
-                <div className="bg-white shadow overflow-hidden sm:rounded-lg p-6 text-center">
-                  <p>Loading cashouts...</p>
-                </div>
-              </div>
-            </div>
-          </main>
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading cashouts...</p>
         </div>
-      </Layout>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Layout>
-        <div className="py-10">
-          <header>
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <h1 className="text-3xl font-bold leading-tight text-gray-900">
-                Cash Out Management
-              </h1>
-            </div>
-          </header>
-          <main>
-            <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-              <div className="px-4 py-8 sm:px-0">
-                <div className="bg-white shadow overflow-hidden sm:rounded-lg p-6">
-                  <p className="text-red-500">Error: {error}</p>
-                  <button 
-                    onClick={() => window.location.reload()} 
-                    className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                  >
-                    Retry
-                  </button>
-                </div>
-              </div>
-            </div>
-          </main>
-        </div>
-      </Layout>
+      <div className="bg-white rounded-2xl shadow-sm p-6 text-center">
+        <p className="text-red-500">Error: {error}</p>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200"
+        >
+          Retry
+        </button>
+      </div>
     );
   }
 
   console.log("CashOut: Rendering with cashouts array length:", cashouts.length);
 
   return (
-    <Layout>
-      <div className="py-10">
-        <header>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h1 className="text-3xl font-bold leading-tight text-gray-900">
-              Cash Out Management
-            </h1>
+    <div className="space-y-6">
+      {/* Summary cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-white rounded-2xl shadow-sm p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-500">Total Cashouts</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900">${totalCashouts.toFixed(2)}</p>
+            </div>
+            <div className="p-3 rounded-full bg-blue-100">
+              <CreditCard className="h-6 w-6 text-blue-600" />
+            </div>
           </div>
-        </header>
+        </div>
+        
+        <div className="bg-white rounded-2xl shadow-sm p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-500">Pending Cashouts</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900">{pendingCashouts}</p>
+            </div>
+            <div className="p-3 rounded-full bg-yellow-100">
+              <Clock className="h-6 w-6 text-yellow-600" />
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-2xl shadow-sm p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-500">Paid Cashouts</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900">{paidCashouts}</p>
+            </div>
+            <div className="p-3 rounded-full bg-green-100">
+              <Banknote className="h-6 w-6 text-green-600" />
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-2xl shadow-sm p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-500">Declined Cashouts</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900">{declinedCashouts}</p>
+            </div>
+            <div className="p-3 rounded-full bg-red-100">
+              <XCircle className="h-6 w-6 text-red-600" />
+            </div>
+          </div>
+        </div>
+      </div>
 
-        <main>
-          <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div className="px-4 py-8 sm:px-0">
-              <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-                <div className="px-4 py-5 sm:px-6">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900">
-                    Recent Cash Outs
-                  </h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Total cash outs: {cashouts.length}
-                  </p>
-
-                  <div className="mt-4 flex flex-col">
-                    <div className="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-                      <div className="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
-                        <div className="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
-                          <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
-                              <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                  User ID
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                  Amount
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                  Message
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                  Date
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                  Status
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                  Actions
-                                </th>
-                              </tr>
-                            </thead>
-
-                            <tbody className="bg-white divide-y divide-gray-200">
-                              {cashouts.length > 0 ? (
-                                cashouts.map((cashout) => (
-                                  <tr key={cashout.id}>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                      <div className="text-sm text-gray-900">{cashout.userId || 'N/A'}</div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                      <div className="text-sm text-gray-900">
-                                        ${cashout.amount ? parseFloat(cashout.amount).toFixed(2) : '0.00'}
-                                      </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                      <div className="text-sm text-gray-900">{cashout.message || 'No message'}</div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                      <div className="text-sm text-gray-900">
-                                        {formatTimestamp(cashout.timestamp)}
-                                      </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                      <span
-                                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(
-                                          cashout.status || "Pending"
-                                        )}`}
-                                      >
-                                        {cashout.status || "Pending"}
-                                      </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                      <div className="flex space-x-2">
-                                        <button
-                                          onClick={() => updateCashoutStatus(cashout.id, "Accepted")}
-                                          className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
-                                        >
-                                          Accept
-                                        </button>
-                                        <button
-                                          onClick={() => updateCashoutStatus(cashout.id, "Denied")}
-                                          className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-                                        >
-                                          Deny
-                                        </button>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                ))
-                              ) : (
-                                <tr>
-                                  <td colSpan="6" className="text-center py-6 text-gray-500">
-                                    No cash outs yet.
-                                  </td>
-                                </tr>
-                              )}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                </div>
+      {/* Filters and search */}
+      <div className="bg-white rounded-2xl shadow-sm p-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+          <h2 className="text-lg font-medium text-gray-900">Cashout Records</h2>
+          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search cashouts..."
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            
+            <div className="relative">
+              <select
+                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-lg bg-gray-50"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="All">All Statuses</option>
+                <option value="Pending">Pending</option>
+                <option value="Accepted">Paid</option>
+                <option value="Denied">Declined</option>
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                <Filter className="h-5 w-5 text-gray-400" />
               </div>
             </div>
           </div>
-        </main>
+        </div>
       </div>
-    </Layout>
+
+      {/* Cashouts table */}
+      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  User ID
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Amount
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Date
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredCashouts.length > 0 ? (
+                filteredCashouts.map((cashout) => (
+                  <tr key={cashout.id} className="hover:bg-gray-50 transition-colors duration-150">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">{cashout.userId || 'N/A'}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-semibold text-gray-900">
+                        ${cashout.amount ? parseFloat(cashout.amount).toFixed(2) : '0.00'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(
+                          cashout.status || "pending"
+                        )}`}
+                      >
+                        {cashout.status === "Accepted" ? "Paid" : cashout.status || "Pending"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {formatTimestamp(cashout.timestamp)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex items-center space-x-3">
+                        {cashout.status === 'pending' ? (
+                          <div className="flex items-center space-x-2">
+                            <button
+                              disabled={!!processing[cashout.id]}
+                              onClick={async () => {
+                                const ok = window.confirm('Mark this cashout as Paid?');
+                                if (!ok) return;
+                                setProcessing(prev => ({ ...prev, [cashout.id]: true }));
+                                try {
+                                  await updateCashoutStatus(cashout.id, "Accepted");
+                                  console.log('Cashout paid:', cashout.id);
+                                } finally {
+                                  setProcessing(prev => {
+                                    const copy = { ...prev };
+                                    delete copy[cashout.id];
+                                    return copy;
+                                  });
+                                }
+                              }}
+                              className="px-3 py-1 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors duration-200 disabled:opacity-50"
+                            >
+                              {processing[cashout.id] ? 'Processing...' : 'Pay'}
+                            </button>
+
+                            <button
+                              disabled={!!processing[cashout.id]}
+                              onClick={async () => {
+                                const ok = window.confirm('Mark this cashout as Declined?');
+                                if (!ok) return;
+                                setProcessing(prev => ({ ...prev, [cashout.id]: true }));
+                                try {
+                                  await updateCashoutStatus(cashout.id, "Denied");
+                                  console.log('Cashout declined:', cashout.id);
+                                } finally {
+                                  setProcessing(prev => {
+                                    const copy = { ...prev };
+                                    delete copy[cashout.id];
+                                    return copy;
+                                  });
+                                }
+                              }}
+                              className="px-3 py-1 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors duration-200 disabled:opacity-50"
+                            >
+                              {processing[cashout.id] ? 'Processing...' : 'Decline'}
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-500">{cashout.status === 'Accepted' ? 'Paid' : cashout.status || 'No actions'}</span>
+                        )}
+
+                        {/* If the cashout has an image/proof url show a view button */}
+                        {cashout.imageUrl ? (
+                          <button
+                            onClick={() => window.open(cashout.imageUrl, '_blank')}
+                            className="text-indigo-600 hover:text-indigo-900 flex items-center"
+                            title="View proof in new tab"
+                          >
+                            <Wallet className="h-4 w-4" />
+                          </button>
+                        ) : null}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">
+                    No cashouts found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   );
 };
 
 export default CashOut;
+

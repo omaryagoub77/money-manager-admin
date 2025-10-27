@@ -8,6 +8,8 @@ import DepositsPage from './pages/DepositsPage';
 import ChatPage from './pages/ChatPage';
 import Home from './pages/Home';
 import CashOut from './pages/CashOut';
+import Users from './pages/Users';
+import Layout from './components/Layout';
 
 import './App.css';
 
@@ -16,14 +18,20 @@ function App() {
     <Router>
       <div className="App">
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/profile" element={<Profile />} />
+          {/* Public routes that shouldn't show the main layout */}
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUP />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/deposits" element={<DepositsPage />} />
-          <Route path="/cashouts" element={<CashOut />} />
-          <Route path="/chat" element={<ChatPage />} />
+
+          {/* Protected / main app routes wrapped by Layout so sidebar/header stay fixed */}
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="profile" element={<Profile />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="deposits" element={<DepositsPage />} />
+            <Route path="cashouts" element={<CashOut />} />
+            <Route path="users" element={<Users />} />
+            <Route path="chat" element={<ChatPage />} />
+          </Route>
         </Routes>
       </div>
     </Router>

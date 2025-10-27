@@ -40,6 +40,7 @@ const NavBar = () => {
               <Link to="/cashouts" className={getLinkClass('/cashouts')}>
                 Cash Outs
               </Link>
+ 
               <Link to="/chat" className={getLinkClass('/chat')}>
                 Chat
               </Link>
@@ -71,3 +72,4 @@ const NavBar = () => {
 };
 
 export default NavBar;
+
