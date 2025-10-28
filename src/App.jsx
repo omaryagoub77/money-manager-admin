@@ -3,6 +3,7 @@ import SignIn from './components/Chat/SignIn';
 import SignUP from './components/Chat/SignUp';
 import Profile from './pages/Profile';
 import Dashboard from './pages/Dashboard';
+import Paybackloans from './pages/Paybackloans';
 import DepositsPage from './pages/DepositsPage';
 import ChatPage from './pages/ChatPage';
 import Home from './pages/Home';
@@ -21,6 +22,7 @@ function App() {
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="deposits" element={<DepositsPage />} />
         <Route path="loans" element={<Loans />} />
+        <Route path="payback" element={<Paybackloans />} />
         <Route path="users" element={<Users />} />
         <Route path="chat" element={<ChatPage />} />
       </Route>

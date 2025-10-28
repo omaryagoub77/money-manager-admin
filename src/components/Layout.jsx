@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { 
-  Home, 
-  DollarSign, 
+  
+  LayoutDashboard,
   CreditCard, 
   Users, 
   Settings, 
@@ -11,7 +11,9 @@ import {
   Search,
   Bell,
   User,
-  MessageCircleMore
+  MessageCircleMore,
+  BanknoteArrowDown,
+  PiggyBank
 } from 'lucide-react';
 
 const Layout = () => {
@@ -19,8 +21,8 @@ const Layout = () => {
   const location = useLocation();
 
   const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: Home },
-    { name: 'Deposits', href: '/deposits', icon: DollarSign },
+    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Deposits', href: '/deposits', icon: PiggyBank },
     { name: 'loans', href: '/loans', icon: CreditCard },
     { name: 'Chat', href: '/chat', icon:   MessageCircleMore },
     { name: 'Users', href: '/users', icon: Users },

@@ -80,9 +80,9 @@ const CashOut = () => {
 
   const getStatusClass = (status) => {
     switch (status) {
-      case "Accepted":
+      case "accepted":
         return "bg-green-100 text-green-800";
-      case "Denied":
+      case "denied":
         return "bg-red-100 text-red-800";
       case "Pending":
         return "bg-yellow-100 text-yellow-800";
@@ -127,16 +127,16 @@ const CashOut = () => {
   // Calculate stats
   const totalloans = loans.reduce((sum, cashout) => sum + (parseFloat(cashout.amount) || 0), 0);
   const pendingloans = loans.filter(cashout => cashout.status === 'pending').length;
-  const paidloans = loans.filter(cashout => cashout.status === 'Accepted').length;
-  const declinedloans = loans.filter(cashout => cashout.status === 'Denied').length;
+  const paidloans = loans.filter(cashout => cashout.status === 'accepted').length;
+  const declinedloans = loans.filter(cashout => cashout.status === 'denied').length;
   
   // New calculated values
   const totalPaidAmount = loans
-    .filter(cashout => cashout.status === 'Accepted')
+    .filter(cashout => cashout.status === 'accepted')
     .reduce((sum, cashout) => sum + (parseFloat(cashout.amount) || 0), 0);
   
   const totalDeclinedAmount = loans
-    .filter(cashout => cashout.status === 'Denied')
+    .filter(cashout => cashout.status === 'denied')
     .reduce((sum, cashout) => sum + (parseFloat(cashout.amount) || 0), 0);
 
   // Filter loans based on search term and status filter
@@ -279,8 +279,8 @@ const CashOut = () => {
               >
                 <option value="All">All Statuses</option>
                 <option value="Pending">Pending</option>
-                <option value="Accepted">Paid</option>
-                <option value="Denied">Declined</option>
+                <option value="accepted">Paid</option>
+                <option value="denied">Declined</option>
               </select>
               <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                 <Filter className="h-5 w-5 text-gray-400" />
@@ -331,7 +331,7 @@ const CashOut = () => {
                           cashout.status || "pending"
                         )}`}
                       >
-                        {cashout.status === "Accepted" ? "Paid" : cashout.status || "Pending"}
+                        {cashout.status === "accepted" ? "Paid" : cashout.status || "Pending"}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -348,7 +348,7 @@ const CashOut = () => {
                                 if (!ok) return;
                                 setProcessing(prev => ({ ...prev, [cashout.id]: true }));
                                 try {
-                                  await updateloanstatus(cashout.id, "Accepted");
+                                  await updateloanstatus(cashout.id, "accepted");
                                   console.log('Cashout paid:', cashout.id);
                                 } finally {
                                   setProcessing(prev => {
@@ -370,7 +370,7 @@ const CashOut = () => {
                                 if (!ok) return;
                                 setProcessing(prev => ({ ...prev, [cashout.id]: true }));
                                 try {
-                                  await updateloanstatus(cashout.id, "Denied");
+                                  await updateloanstatus(cashout.id, "denied");
                                   console.log('Cashout declined:', cashout.id);
                                 } finally {
                                   setProcessing(prev => {
@@ -386,7 +386,7 @@ const CashOut = () => {
                             </button>
                           </div>
                         ) : (
-                          <span className="text-sm text-gray-500">{cashout.status === 'Accepted' ? 'Paid' : cashout.status || 'No actions'}</span>
+                          <span className="text-sm text-gray-500">{cashout.status === 'accepted' ? 'Paid' : cashout.status || 'No actions'}</span>
                         )}
 
                         {/* If the cashout has an image/proof url show a view button */}
