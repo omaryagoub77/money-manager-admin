@@ -10,7 +10,8 @@ import {
   X, 
   Search,
   Bell,
-  User
+  User,
+  MessageCircleMore
 } from 'lucide-react';
 
 const Layout = () => {
@@ -20,7 +21,8 @@ const Layout = () => {
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Deposits', href: '/deposits', icon: DollarSign },
-    { name: 'Cashouts', href: '/cashouts', icon: CreditCard },
+    { name: 'loans', href: '/loans', icon: CreditCard },
+    { name: 'Chat', href: '/chat', icon:   MessageCircleMore },
     { name: 'Users', href: '/users', icon: Users },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
@@ -105,7 +107,7 @@ const Layout = () => {
               <h2 className="text-xl font-semibold text-gray-800">
                 {location.pathname === '/dashboard' && '💰 Dashboard'}
                 {location.pathname === '/deposits' && '💰 Deposits Overview'}
-                {location.pathname === '/cashouts' && '💸 Cashouts Overview'}
+                {location.pathname === '/loans' && '💸 loans Overview'}
                 {location.pathname === '/users' && '👥 Users Overview'}
                 {location.pathname === '/chat' && '👥 Users Overview'}
               </h2>

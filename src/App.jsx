@@ -6,7 +6,7 @@ import Dashboard from './pages/Dashboard';
 import DepositsPage from './pages/DepositsPage';
 import ChatPage from './pages/ChatPage';
 import Home from './pages/Home';
-import CashOut from './pages/CashOut';
+import Loans from './pages/Loans';
 import Users from './pages/Users';
 import Layout from './components/Layout';
 
@@ -20,7 +20,7 @@ function App() {
         <Route path="profile" element={<Profile />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="deposits" element={<DepositsPage />} />
-        <Route path="cashouts" element={<CashOut />} />
+        <Route path="loans" element={<Loans />} />
         <Route path="users" element={<Users />} />
         <Route path="chat" element={<ChatPage />} />
       </Route>

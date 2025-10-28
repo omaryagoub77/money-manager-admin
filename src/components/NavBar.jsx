@@ -37,8 +37,8 @@ const NavBar = () => {
               <Link to="/deposits" className={getLinkClass('/deposits')}>
                 Deposits
               </Link>
-              <Link to="/cashouts" className={getLinkClass('/cashouts')}>
-                Cash Outs
+              <Link to="/loans" className={getLinkClass('/loans')}>
+                Loans
               </Link>
  
               <Link to="/chat" className={getLinkClass('/chat')}>

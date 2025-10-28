@@ -128,9 +128,18 @@ const DepositsPage = () => {
 
   // Calculate stats
   const totalDeposits = deposits.reduce((sum, deposit) => sum + (parseFloat(deposit.amount) || 0), 0);
-  const pendingDeposits = deposits.filter(deposit => deposit.status === 'Pending').length;
+  const pendingDeposits = deposits.filter(deposit => deposit.status === 'pending').length;
   const acceptedDeposits = deposits.filter(deposit => deposit.status === 'Accepted').length;
   const deniedDeposits = deposits.filter(deposit => deposit.status === 'Denied').length;
+  
+  // New calculated values
+  const totalAcceptedAmount = deposits
+    .filter(deposit => deposit.status === 'Accepted')
+    .reduce((sum, deposit) => sum + (parseFloat(deposit.amount) || 0), 0);
+  
+  const totalDeniedAmount = deposits
+    .filter(deposit => deposit.status === 'Denied')
+    .reduce((sum, deposit) => sum + (parseFloat(deposit.amount) || 0), 0);
 
   // Filter deposits based on search term and status filter
   const filteredDeposits = deposits.filter(deposit => {
@@ -182,7 +191,7 @@ const DepositsPage = () => {
   return (
     <div className="space-y-6">
       {/* Summary cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
         <div className="bg-white rounded-2xl shadow-sm p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -227,6 +236,32 @@ const DepositsPage = () => {
             </div>
             <div className="p-3 rounded-full bg-red-100">
               <XCircle className="h-6 w-6 text-red-600" />
+            </div>
+          </div>
+        </div>
+        
+        {/* New card for Total Accepted Amount */}
+        <div className="bg-white rounded-2xl shadow-sm p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-500">Total Accepted Amount</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900">${totalAcceptedAmount.toFixed(2)}</p>
+            </div>
+            <div className="p-3 rounded-full bg-green-100">
+              <DollarSign className="h-6 w-6 text-green-600" />
+            </div>
+          </div>
+        </div>
+        
+        {/* New card for Total Denied Amount */}
+        <div className="bg-white rounded-2xl shadow-sm p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-500">Total Denied Amount</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900">${totalDeniedAmount.toFixed(2)}</p>
+            </div>
+            <div className="p-3 rounded-full bg-red-100">
+              <DollarSign className="h-6 w-6 text-red-600" />
             </div>
           </div>
         </div>

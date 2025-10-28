@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 
 const CashOut = () => {
-  const [cashouts, setCashouts] = useState([]);
+  const [loans, setloans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -23,8 +23,8 @@ const CashOut = () => {
   useEffect(() => {
     console.log("CashOut: Starting data fetch...");
     
-    // Real-time listener for cashouts, ordered by timestamp descending
-    const q = query(collection(db, "cashouts"), orderBy("timestamp", "desc"));
+    // Real-time listener for loans, ordered by timestamp descending
+    const q = query(collection(db, "loans"), orderBy("timestamp", "desc"));
     
     const unsub = onSnapshot(q, 
       (snapshot) => {
@@ -33,7 +33,7 @@ const CashOut = () => {
           console.log("CashOut: Number of docs in snapshot:", snapshot.docs.length);
           
           if (snapshot.docs.length === 0) {
-            console.log("CashOut: No documents found in 'cashouts' collection");
+            console.log("CashOut: No documents found in 'loans' collection");
           }
           
           const data = snapshot.docs.map((doc) => {
@@ -46,7 +46,7 @@ const CashOut = () => {
           });
           
           console.log("CashOut: Processed data:", data);
-          setCashouts(data);
+          setloans(data);
           setLoading(false);
           console.log("CashOut: Data fetch completed");
         } catch (err) {
@@ -63,9 +63,9 @@ const CashOut = () => {
         if (err.code === 'permission-denied') {
           setError("Permission denied. Check Firestore security rules.");
         } else if (err.code === 'not-found') {
-          setError("Collection 'cashouts' not found.");
+          setError("Collection 'loans' not found.");
         } else {
-          setError("Failed to load cashouts: " + err.message);
+          setError("Failed to load loans: " + err.message);
         }
         
         setLoading(false);
@@ -92,9 +92,9 @@ const CashOut = () => {
   };
 
   // Function to update cashout status
-  const updateCashoutStatus = async (cashoutId, newStatus) => {
+  const updateloanstatus = async (cashoutId, newStatus) => {
     try {
-      const cashoutRef = doc(db, "cashouts", cashoutId);
+      const cashoutRef = doc(db, "loans", cashoutId);
       await updateDoc(cashoutRef, {
         status: newStatus
       });
@@ -125,13 +125,22 @@ const CashOut = () => {
   };
 
   // Calculate stats
-  const totalCashouts = cashouts.reduce((sum, cashout) => sum + (parseFloat(cashout.amount) || 0), 0);
-  const pendingCashouts = cashouts.filter(cashout => cashout.status === 'pending').length;
-  const paidCashouts = cashouts.filter(cashout => cashout.status === 'Accepted').length;
-  const declinedCashouts = cashouts.filter(cashout => cashout.status === 'Denied').length;
+  const totalloans = loans.reduce((sum, cashout) => sum + (parseFloat(cashout.amount) || 0), 0);
+  const pendingloans = loans.filter(cashout => cashout.status === 'pending').length;
+  const paidloans = loans.filter(cashout => cashout.status === 'Accepted').length;
+  const declinedloans = loans.filter(cashout => cashout.status === 'Denied').length;
+  
+  // New calculated values
+  const totalPaidAmount = loans
+    .filter(cashout => cashout.status === 'Accepted')
+    .reduce((sum, cashout) => sum + (parseFloat(cashout.amount) || 0), 0);
+  
+  const totalDeclinedAmount = loans
+    .filter(cashout => cashout.status === 'Denied')
+    .reduce((sum, cashout) => sum + (parseFloat(cashout.amount) || 0), 0);
 
-  // Filter cashouts based on search term and status filter
-  const filteredCashouts = cashouts.filter(cashout => {
+  // Filter loans based on search term and status filter
+  const filteredloans = loans.filter(cashout => {
     const matchesSearch = cashout.userId?.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           cashout.message?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'All' || cashout.status === statusFilter;
@@ -143,7 +152,7 @@ const CashOut = () => {
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading cashouts...</p>
+          <p className="mt-4 text-gray-600">Loading loans...</p>
         </div>
       </div>
     );
@@ -163,17 +172,17 @@ const CashOut = () => {
     );
   }
 
-  console.log("CashOut: Rendering with cashouts array length:", cashouts.length);
+  console.log("CashOut: Rendering with loans array length:", loans.length);
 
   return (
     <div className="space-y-6">
       {/* Summary cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
         <div className="bg-white rounded-2xl shadow-sm p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">Total Cashouts</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900">${totalCashouts.toFixed(2)}</p>
+              <p className="text-sm font-medium text-gray-500">Total loans</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900">${totalloans.toFixed(2)}</p>
             </div>
             <div className="p-3 rounded-full bg-blue-100">
               <CreditCard className="h-6 w-6 text-blue-600" />
@@ -184,8 +193,8 @@ const CashOut = () => {
         <div className="bg-white rounded-2xl shadow-sm p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">Pending Cashouts</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900">{pendingCashouts}</p>
+              <p className="text-sm font-medium text-gray-500">Pending loans</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900">{pendingloans}</p>
             </div>
             <div className="p-3 rounded-full bg-yellow-100">
               <Clock className="h-6 w-6 text-yellow-600" />
@@ -196,8 +205,8 @@ const CashOut = () => {
         <div className="bg-white rounded-2xl shadow-sm p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">Paid Cashouts</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900">{paidCashouts}</p>
+              <p className="text-sm font-medium text-gray-500">Paid loans</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900">{paidloans}</p>
             </div>
             <div className="p-3 rounded-full bg-green-100">
               <Banknote className="h-6 w-6 text-green-600" />
@@ -208,8 +217,34 @@ const CashOut = () => {
         <div className="bg-white rounded-2xl shadow-sm p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">Declined Cashouts</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900">{declinedCashouts}</p>
+              <p className="text-sm font-medium text-gray-500">Declined loans</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900">{declinedloans}</p>
+            </div>
+            <div className="p-3 rounded-full bg-red-100">
+              <XCircle className="h-6 w-6 text-red-600" />
+            </div>
+          </div>
+        </div>
+        
+        {/* New card for Total Paid Amount */}
+        <div className="bg-white rounded-2xl shadow-sm p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-500">Total Paid Amount</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900">${totalPaidAmount.toFixed(2)}</p>
+            </div>
+            <div className="p-3 rounded-full bg-green-100">
+              <Banknote className="h-6 w-6 text-green-600" />
+            </div>
+          </div>
+        </div>
+        
+        {/* New card for Total Declined Amount */}
+        <div className="bg-white rounded-2xl shadow-sm p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-500">Total Declined Amount</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900">${totalDeclinedAmount.toFixed(2)}</p>
             </div>
             <div className="p-3 rounded-full bg-red-100">
               <XCircle className="h-6 w-6 text-red-600" />
@@ -221,7 +256,7 @@ const CashOut = () => {
       {/* Filters and search */}
       <div className="bg-white rounded-2xl shadow-sm p-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
-          <h2 className="text-lg font-medium text-gray-900">Cashout Records</h2>
+          <h2 className="text-lg font-medium text-gray-900">Loans Records</h2>
           <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -229,7 +264,7 @@ const CashOut = () => {
               </div>
               <input
                 type="text"
-                placeholder="Search cashouts..."
+                placeholder="Search loans..."
                 className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -255,7 +290,7 @@ const CashOut = () => {
         </div>
       </div>
 
-      {/* Cashouts table */}
+      {/* loans table */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
@@ -279,8 +314,8 @@ const CashOut = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredCashouts.length > 0 ? (
-                filteredCashouts.map((cashout) => (
+              {filteredloans.length > 0 ? (
+                filteredloans.map((cashout) => (
                   <tr key={cashout.id} className="hover:bg-gray-50 transition-colors duration-150">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{cashout.userId || 'N/A'}</div>
@@ -313,7 +348,7 @@ const CashOut = () => {
                                 if (!ok) return;
                                 setProcessing(prev => ({ ...prev, [cashout.id]: true }));
                                 try {
-                                  await updateCashoutStatus(cashout.id, "Accepted");
+                                  await updateloanstatus(cashout.id, "Accepted");
                                   console.log('Cashout paid:', cashout.id);
                                 } finally {
                                   setProcessing(prev => {
@@ -335,7 +370,7 @@ const CashOut = () => {
                                 if (!ok) return;
                                 setProcessing(prev => ({ ...prev, [cashout.id]: true }));
                                 try {
-                                  await updateCashoutStatus(cashout.id, "Denied");
+                                  await updateloanstatus(cashout.id, "Denied");
                                   console.log('Cashout declined:', cashout.id);
                                 } finally {
                                   setProcessing(prev => {
@@ -371,7 +406,7 @@ const CashOut = () => {
               ) : (
                 <tr>
                   <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">
-                    No cashouts found.
+                    No loans found.
                   </td>
                 </tr>
               )}
@@ -384,4 +419,3 @@ const CashOut = () => {
 };
 
 export default CashOut;
-
