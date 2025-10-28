@@ -59,22 +59,27 @@ const Users = () => {
     return () => unsub();
   }, []);
 
-  // Fetch user-specific deposits and loans when modal opens
+  // Set up listeners for the selected user's deposits and loans
+  // This effect runs whenever a user is selected, not just when the modal is open
   useEffect(() => {
-    if (!showModal || !selectedUser) {
-      // Clean up listeners when modal closes
-      if (depositsUnsubRef.current) {
-        depositsUnsubRef.current();
-        depositsUnsubRef.current = null;
-      }
-      if (loansUnsubRef.current) {
-        loansUnsubRef.current();
-        loansUnsubRef.current = null;
-      }
+    // Clean up any existing listeners
+    if (depositsUnsubRef.current) {
+      depositsUnsubRef.current();
+      depositsUnsubRef.current = null;
+    }
+    if (loansUnsubRef.current) {
+      loansUnsubRef.current();
+      loansUnsubRef.current = null;
+    }
+
+    // If no user is selected, don't set up new listeners
+    if (!selectedUser) {
+      setDeposits([]);
+      setLoans([]);
       return;
     }
 
-    // Fetch deposits
+    // Set up deposits listener
     setDepositsLoading(true);
     setDepositsError(null);
     const depositsQuery = query(
@@ -104,7 +109,7 @@ const Users = () => {
       }
     );
 
-    // Fetch loans
+    // Set up loans listener
     setLoansLoading(true);
     setLoansError(null);
     const loansQuery = query(
@@ -134,6 +139,7 @@ const Users = () => {
       }
     );
 
+    // Return cleanup function
     return () => {
       if (depositsUnsubRef.current) {
         depositsUnsubRef.current();
@@ -144,7 +150,7 @@ const Users = () => {
         loansUnsubRef.current = null;
       }
     };
-  }, [showModal, selectedUser]);
+  }, [selectedUser]); // Only depends on selectedUser, not showModal
 
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return 'N/A';
@@ -185,9 +191,8 @@ const Users = () => {
 
   const closeModal = () => {
     setShowModal(false);
-    setSelectedUser(null);
-    setDeposits([]);
-    setLoans([]);
+    // Don't clear selectedUser here to keep listeners active
+    // This allows the data to stay updated even when modal is closed
   };
 
   const handleApproveDeny = async (collectionName, itemId, newStatus) => {
@@ -218,7 +223,7 @@ const Users = () => {
     document.body.removeChild(link);
   };
 
-  // Calculate summary statistics
+  // Calculate summary statistics - these will now update in real-time
   const totalDepositsAmount = deposits.reduce((sum, deposit) => sum + (deposit.amount || 0), 0);
   const totalLoansAmount = loans.reduce((sum, loan) => sum + (loan.amount || 0), 0);
   
@@ -431,7 +436,7 @@ const Users = () => {
                       <span className="text-sm text-gray-500">Total Amount:</span>
                       <span className="text-sm font-medium text-gray-900">${totalDepositsAmount.toFixed(2)}</span>
                     </div>
-                    <div className="grid grid-cols-3 gap-2">
+                    {/* <div className="grid grid-cols-3 gap-2">
                       <div className="text-center p-2 bg-yellow-50 rounded">
                         <Clock className="h-5 w-5 text-yellow-600 mx-auto mb-1" />
                         <p className="text-xs text-gray-500">Pending</p>
@@ -447,7 +452,7 @@ const Users = () => {
                         <p className="text-xs text-gray-500">Denied</p>
                         <p className="text-sm font-medium text-gray-900">{depositStatusCounts.denied}</p>
                       </div>
-                    </div>
+                    </div> */}
                   </div>
                 </div>
 
@@ -464,7 +469,7 @@ const Users = () => {
                       <span className="text-sm text-gray-500">Total Amount:</span>
                       <span className="text-sm font-medium text-gray-900">${totalLoansAmount.toFixed(2)}</span>
                     </div>
-                    <div className="grid grid-cols-3 gap-2">
+                    {/* <div className="grid grid-cols-3 gap-2">
                       <div className="text-center p-2 bg-yellow-50 rounded">
                         <Clock className="h-5 w-5 text-yellow-600 mx-auto mb-1" />
                         <p className="text-xs text-gray-500">Pending</p>
@@ -480,7 +485,7 @@ const Users = () => {
                         <p className="text-xs text-gray-500">Denied</p>
                         <p className="text-sm font-medium text-gray-900">{loanStatusCounts.denied}</p>
                       </div>
-                    </div>
+                    </div> */}
                   </div>
                 </div>
               </div>
@@ -603,7 +608,7 @@ const Users = () => {
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Approved By</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                          {/* <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th> */}
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
@@ -618,7 +623,7 @@ const Users = () => {
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{formatTimestamp(loan.timestamp)}</td>
                             <td className="px-4 py-3 text-sm text-gray-900 max-w-xs truncate" title={loan.reason}>{loan.reason || 'N/A'}</td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{loan.approvedBy || 'N/A'}</td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
+                            {/* <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
                               {loan.status === 'pending' && (
                                 <div className="flex space-x-2">
                                   <button
@@ -647,7 +652,7 @@ const Users = () => {
                                   </button>
                                 </div>
                               )}
-                            </td>
+                            </td> */}
                           </tr>
                         ))}
                       </tbody>
