@@ -22,6 +22,16 @@ const DepositsPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [processing, setProcessing] = useState({});
 
+  // WhatsApp theme colors
+  const theme = {
+    bg: 'bg-[#ECE5DD]',
+    primary: 'bg-[#075E54]',
+    accent: 'bg-[#25D366]',
+    card: 'bg-white',
+    text: 'text-gray-800',
+    shadow: 'shadow-md'
+  };
+
   useEffect(() => {
     console.log("DepositsPage: Starting data fetch...");
     
@@ -189,29 +199,29 @@ const DepositsPage = () => {
   console.log("DepositsPage: Rendering with deposits array length:", deposits.length);
 
   return (
-    <div className="space-y-6">
+    <div className={`min-h-screen ${theme.bg} p-4 space-y-6 font-[Inter]`}>
       {/* Summary cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
-        <div className="bg-white rounded-2xl shadow-sm p-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className={`${theme.card} rounded-2xl ${theme.shadow} p-6 transition-transform hover:scale-[1.02] duration-200`}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">Total Deposits</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900">${totalDeposits.toFixed(2)}</p>
+              <p className="text-sm font-medium text-gray-600">Total Deposits</p>
+              <p className={`mt-2 text-3xl font-bold ${theme.text}`}>${totalDeposits.toFixed(2)}</p>
             </div>
-            <div className="p-3 rounded-full bg-indigo-100">
-              <DollarSign className="h-6 w-6 text-indigo-600" />
+            <div className={`p-3 rounded-full ${theme.primary} bg-opacity-10`}>
+              <DollarSign className={`h-6 w-6 text-[#075E54]`} />
             </div>
           </div>
         </div>
         
-        <div className="bg-white rounded-2xl shadow-sm p-6">
+        <div className={`${theme.card} rounded-2xl ${theme.shadow} p-6 transition-transform hover:scale-[1.02] duration-200`}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">Pending Deposits</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900">{pendingDeposits}</p>
+              <p className="text-sm font-medium text-gray-600">Pending Deposits</p>
+              <p className={`mt-2 text-3xl font-bold ${theme.text}`}>{pendingDeposits}</p>
             </div>
-            <div className="p-3 rounded-full bg-yellow-100">
-              <Clock className="h-6 w-6 text-yellow-600" />
+            <div className="p-3 rounded-full bg-amber-50">
+              <Clock className="h-6 w-6 text-amber-500" />
             </div>
           </div>
         </div>
@@ -268,18 +278,18 @@ const DepositsPage = () => {
       </div>
 
       {/* Filters and search */}
-      <div className="bg-white rounded-2xl shadow-sm p-6">
+      <div className={`${theme.card} rounded-2xl ${theme.shadow} p-6`}>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
-          <h2 className="text-lg font-medium text-gray-900">Deposit Records</h2>
+          <h2 className={`text-lg font-semibold ${theme.text}`}>Deposit Records</h2>
           <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-gray-400" />
+                <Search className="h-5 w-5 text-[#075E54]" />
               </div>
               <input
                 type="text"
                 placeholder="Search deposits..."
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="block w-full pl-10 pr-3 py-2 border-none rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#25D366] transition-shadow duration-200 sm:text-sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />

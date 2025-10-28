@@ -29,8 +29,11 @@ const Dashboard = () => {
   const [totalUsers, setTotalUsers] = useState(0);
   const [depositsError, setDepositsError] = useState(false);
   const [cashoutsError, setCashoutsError] = useState(false);
+  const [usersError, setUsersError] = useState(false);
   const [chartData, setChartData] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // Function to format tooltip time
   const formatTooltipTime = (timestamp) => {
@@ -41,6 +44,44 @@ const Dashboard = () => {
       hour12: true,
     });
   };
+
+  // Function to fetch users 
+  useEffect(() => {
+    if (!db) {
+      setUsersError('Firestore instance not available');
+      setLoading(false);
+      return;
+    }
+  
+    const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
+    const unsub = onSnapshot(
+      q,
+      (snapshot) => {
+        try {
+          const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+          setUsers(data);
+          setTotalUsers(data.length);
+          setLoading(false);
+          setUsersError(false);
+        } catch (err) {
+          console.error('Error processing users snapshot:', err);
+          setUsersError('Failed to process users data');
+          setLoading(false);
+        }
+      },
+      (err) => {
+        console.error('Error fetching users:', err);
+        if (err.code === 'permission-denied') {
+          setUsersError('Permission denied. Check Firestore rules.');
+        } else {
+          setUsersError('Failed to load users: ' + (err.message || 'Unknown error'));
+        }
+        setLoading(false);
+      }
+    );
+  
+    return () => unsub();
+  }, []);
 
   // Custom tooltip component
   const CustomTooltip = ({ active, payload, label }) => {
@@ -256,13 +297,24 @@ const Dashboard = () => {
     {
       id: 4,
       name: 'Total Users',
-      value: totalUsers || '1,254',
+      value: usersError ? 'N/A' : totalUsers,
       change: '+5.4%',
       changeType: 'positive',
       icon: Users,
       iconColor: 'bg-green-500',
     },
   ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
