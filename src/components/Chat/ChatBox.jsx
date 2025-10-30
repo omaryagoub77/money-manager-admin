@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../../firebaseConfig';
-import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
 
 export default function ChatBox() {
@@ -8,8 +8,81 @@ export default function ChatBox() {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [onlineUsers, setOnlineUsers] = useState(new Set());
+  const [users, setUsers] = useState({});
   const messagesEndRef = useRef();
-
+  const lastActiveIntervalRef = useRef();
+  
+  // Set user online status when component mounts
+  useEffect(() => {
+    if (!currentUser) return;
+    
+    const setUserOnline = async () => {
+      try {
+        const userRef = doc(db, 'users', currentUser.uid);
+        await updateDoc(userRef, {
+          isOnline: true,
+          lastActive: serverTimestamp()
+        });
+      } catch (error) {
+        console.error('Error setting user online:', error);
+      }
+    };
+    
+    setUserOnline();
+    
+    // Set up periodic lastActive updates (every 30 seconds)
+    lastActiveIntervalRef.current = setInterval(async () => {
+      try {
+        const userRef = doc(db, 'users', currentUser.uid);
+        await updateDoc(userRef, {
+          lastActive: serverTimestamp()
+        });
+      } catch (error) {
+        console.error('Error updating lastActive:', error);
+      }
+    }, 30000);
+    
+    // Handle page unload - set user offline
+    const handleBeforeUnload = async () => {
+      try {
+        const userRef = doc(db, 'users', currentUser.uid);
+        await updateDoc(userRef, {
+          isOnline: false,
+          lastActive: serverTimestamp()
+        });
+      } catch (error) {
+        console.error('Error setting user offline:', error);
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      // Clean up interval and event listener
+      clearInterval(lastActiveIntervalRef.current);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      
+      // Set user offline when component unmounts
+      if (currentUser) {
+        const setUserOffline = async () => {
+          try {
+            const userRef = doc(db, 'users', currentUser.uid);
+            await updateDoc(userRef, {
+              isOnline: false,
+              lastActive: serverTimestamp()
+            });
+          } catch (error) {
+            console.error('Error setting user offline:', error);
+          }
+        };
+        
+        setUserOffline();
+      }
+    };
+  }, [currentUser]);
+  
+  // Fetch messages
   useEffect(() => {
     // Only subscribe to messages if user is logged in
     if (!currentUser) {
@@ -22,6 +95,43 @@ export default function ChatBox() {
       setMessages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
     });
+    return unsubscribe;
+  }, [currentUser]);
+  
+  // Fetch users and their online status
+  useEffect(() => {
+    if (!currentUser) return;
+    
+    const unsubscribe = onSnapshot(collection(db, 'users'), snapshot => {
+      const usersData = {};
+      const onlineUsersSet = new Set();
+      
+      snapshot.forEach(doc => {
+        const userData = doc.data();
+        usersData[doc.id] = userData;
+        
+        // Check if user is online (active in the last 2 minutes)
+        if (userData.isOnline && userData.lastActive) {
+          const lastActiveTime = userData.lastActive.toDate();
+          const currentTime = new Date();
+          const timeDiff = (currentTime - lastActiveTime) / (1000 * 60); // in minutes
+          
+          // Consider user online if they were active in the last 2 minutes
+          if (timeDiff < 2) {
+            onlineUsersSet.add(doc.id);
+          } else {
+            // If user was marked online but hasn't been active recently, update their status
+            updateDoc(doc(db, 'users', doc.id), {
+              isOnline: false
+            });
+          }
+        }
+      });
+      
+      setUsers(usersData);
+      setOnlineUsers(onlineUsersSet);
+    });
+    
     return unsubscribe;
   }, [currentUser]);
 
@@ -71,12 +181,24 @@ export default function ChatBox() {
     <div className="flex flex-col h-screen bg-gradient-to-b from-gray-50 to-gray-100 font-sans text-gray-800 max-w-4xl mx-auto w-full">
       {/* Chat Header */}
       <div className="sticky top-4 z-30 flex items-center gap-3 p-4 m-4 bg-white/70 backdrop-blur-md rounded-2xl shadow-lg transition-all duration-300 hover:shadow-xl">
-        <div className="w-11 h-11 rounded-full flex items-center justify-center bg-gradient-to-br from-indigo-500 to-indigo-600 text-white font-bold shadow-md">
-          {currentUser?.email?.charAt(0).toUpperCase() || 'U'}
+        <div className="relative">
+          <div className="w-11 h-11 rounded-full flex items-center justify-center bg-gradient-to-br from-indigo-500 to-indigo-600 text-white font-bold shadow-md">
+            {currentUser?.email?.charAt(0).toUpperCase() || 'U'}
+          </div>
+          {/* Online status indicator for current user */}
+          <div 
+            className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"
+            title="Online"
+          ></div>
         </div>
         <div className="flex-1">
           <h1 className="text-lg font-bold text-gray-900">Chat Room</h1>
           <p className="text-sm text-gray-500">{messages.length} Messages</p>
+        </div>
+        {/* Online users count */}
+        <div className="flex items-center gap-1 bg-white/80 px-3 py-1 rounded-full">
+          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+          <span className="text-xs text-gray-600">{onlineUsers.size} online</span>
         </div>
       </div>
 
@@ -102,8 +224,17 @@ export default function ChatBox() {
               className={`flex ${msg.userId === currentUser.uid ? 'justify-end' : 'justify-start'} animate-fade-in`}
             >
               {msg.userId !== currentUser.uid && (
-                <div className="w-9 h-9 rounded-full flex items-center justify-center bg-white text-indigo-600 font-bold flex-shrink-0 shadow-sm mr-2">
-                  {msg.userName ? msg.userName.charAt(0).toUpperCase() : 'U'}
+                <div className="relative">
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center bg-white text-indigo-600 font-bold flex-shrink-0 shadow-sm mr-2">
+                    {msg.userName ? msg.userName.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                  {/* Online status indicator for message sender */}
+                  {onlineUsers.has(msg.userId) && (
+                    <div 
+                      className="absolute bottom-0 right-2 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white"
+                      title="Online"
+                    ></div>
+                  )}
                 </div>
               )}
               <div className={`max-w-[72%] p-3 rounded-2xl relative shadow-md transition-all duration-300 hover:shadow-lg ${
@@ -117,8 +248,15 @@ export default function ChatBox() {
                 </div>
               </div>
               {msg.userId === currentUser.uid && (
-                <div className="w-9 h-9 rounded-full flex items-center justify-center bg-gradient-to-br from-indigo-500 to-indigo-600 text-white font-bold flex-shrink-0 shadow-sm ml-2">
-                  {msg.userName ? msg.userName.charAt(0).toUpperCase() : 'U'}
+                <div className="relative">
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center bg-gradient-to-br from-indigo-500 to-indigo-600 text-white font-bold flex-shrink-0 shadow-sm ml-2">
+                    {msg.userName ? msg.userName.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                  {/* Online status indicator for current user */}
+                  <div 
+                    className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white"
+                    title="Online"
+                  ></div>
                 </div>
               )}
             </div>
