@@ -251,7 +251,8 @@ const AdminPaybacksPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredPaybacks.map((payback) => {
                 const isFading = fadingCards.has(payback.id);
-                const isPending = payback.paymentStatus === 'pending';
+                const isPending = !payback.paymentStatus || payback.paymentStatus === 'pending';
+
                 
                 return (
                   <div 

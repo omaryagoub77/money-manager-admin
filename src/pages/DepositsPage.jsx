@@ -14,6 +14,7 @@ import {
 
 const DepositsPage = () => {
   const [deposits, setDeposits] = useState([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -22,63 +23,63 @@ const DepositsPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [processing, setProcessing] = useState({});
 
+  // 🟢 Listen to USERS collection in real-time
   useEffect(() => {
-    console.log("DepositsPage: Starting data fetch...");
-    
-    // Real-time listener for deposits, ordered by timestamp descending
-    const q = query(collection(db, "deposits"), orderBy("timestamp", "desc"));
-    
-    const unsub = onSnapshot(q, 
+    const userQuery = query(collection(db, "users"));
+    const unsubUsers = onSnapshot(userQuery, 
+      (snapshot) => {
+        const userData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setUsers(userData);
+      },
+      (err) => {
+        console.error("Error loading users:", err);
+        setError("Failed to load users: " + err.message);
+      }
+    );
+    return () => unsubUsers();
+  }, []);
+
+  // 🟣 Listen to DEPOSITS collection and merge with USERS
+  useEffect(() => {
+    const depositQuery = query(collection(db, "deposits"), orderBy("timestamp", "desc"));
+    const unsubDeposits = onSnapshot(
+      depositQuery,
       (snapshot) => {
         try {
-          console.log("DepositsPage: Snapshot received");
-          console.log("DepositsPage: Number of docs in snapshot:", snapshot.docs.length);
-          
-          if (snapshot.docs.length === 0) {
-            console.log("DepositsPage: No documents found in 'deposits' collection");
-          }
-          
-          const data = snapshot.docs.map((doc) => {
-            const docData = doc.data();
-            console.log("DepositsPage: Document ID:", doc.id, "Data:", docData);
+          const depositData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+
+          // Merge each deposit with corresponding user's name
+          const mergedData = depositData.map(deposit => {
+            const user = users.find((u) => u.uid === deposit.userId);
             return {
-              id: doc.id,
-              ...docData,
+              ...deposit,
+              userName: user ? user.fullName || "Unnamed User" : "Unknown User",
             };
           });
-          
-          console.log("DepositsPage: Processed data:", data);
-          setDeposits(data);
+
+          setDeposits(mergedData);
           setLoading(false);
-          console.log("DepositsPage: Data fetch completed");
         } catch (err) {
-          console.error("DepositsPage: Error processing snapshot:", err);
+          console.error("Error merging deposit data:", err);
           setError("Error processing deposit data: " + err.message);
           setLoading(false);
         }
       },
       (err) => {
-        console.error("DepositsPage: Firebase error:", err);
-        console.error("DepositsPage: Firebase error code:", err.code);
-        console.error("DepositsPage: Firebase error message:", err.message);
-        
-        if (err.code === 'permission-denied') {
-          setError("Permission denied. Check Firestore security rules.");
-        } else if (err.code === 'not-found') {
-          setError("Collection 'deposits' not found.");
-        } else {
-          setError("Failed to load deposits: " + err.message);
-        }
-        
+        console.error("Firestore error:", err);
+        setError("Failed to load deposits: " + err.message);
         setLoading(false);
       }
     );
 
-    return () => {
-      console.log("DepositsPage: Unsubscribing from listener");
-      unsub();
-    };
-  }, []);
+    return () => unsubDeposits();
+  }, [users]);
 
   const getStatusClass = (status) => {
     switch (status) {
@@ -131,11 +132,22 @@ const DepositsPage = () => {
   const pendingDeposits = deposits.filter(deposit => deposit.status === 'pending').length;
   const acceptedDeposits = deposits.filter(deposit => deposit.status === 'accepted').length;
   const deniedDeposits = deposits.filter(deposit => deposit.status === 'denied').length;
+  
+  // New calculated values for Total Accepted Amount and Total Declined Amount
+  const totalAcceptedAmount = deposits
+    .filter(deposit => deposit.status === 'accepted')
+    .reduce((sum, deposit) => sum + (parseFloat(deposit.amount) || 0), 0);
+  
+  const totalDeclinedAmount = deposits
+    .filter(deposit => deposit.status === 'denied')
+    .reduce((sum, deposit) => sum + (parseFloat(deposit.amount) || 0), 0);
 
   // Filter deposits based on search term and status filter
   const filteredDeposits = deposits.filter(deposit => {
-    const matchesSearch = deposit.userId?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          deposit.message?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = 
+      (deposit.userName?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (deposit.userId?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (deposit.message?.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesStatus = statusFilter === 'All' || deposit.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -182,7 +194,7 @@ const DepositsPage = () => {
   return (
     <div className="space-y-6">
       {/* Summary cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white rounded-2xl shadow-sm p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -230,6 +242,32 @@ const DepositsPage = () => {
             </div>
           </div>
         </div>
+        
+        {/* New card for Total Accepted Amount */}
+        <div className="bg-white rounded-2xl shadow-sm p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-500">Total Accepted Amount</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900">${totalAcceptedAmount.toFixed(2)}</p>
+            </div>
+            <div className="p-3 rounded-full bg-green-100">
+              <CheckCircle className="h-6 w-6 text-green-600" />
+            </div>
+          </div>
+        </div>
+        
+        {/* New card for Total Declined Amount */}
+        <div className="bg-white rounded-2xl shadow-sm p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-500">Total Declined Amount</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900">${totalDeclinedAmount.toFixed(2)}</p>
+            </div>
+            <div className="p-3 rounded-full bg-red-100">
+              <XCircle className="h-6 w-6 text-red-600" />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Filters and search */}
@@ -243,7 +281,7 @@ const DepositsPage = () => {
               </div>
               <input
                 type="text"
-                placeholder="Search deposits..."
+                placeholder="Search by name, user ID or message..."
                 className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -276,7 +314,7 @@ const DepositsPage = () => {
             <thead className="bg-gray-50">
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  User ID
+                  User Name
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Amount
@@ -300,7 +338,8 @@ const DepositsPage = () => {
                 filteredDeposits.map((deposit) => (
                   <tr key={deposit.id} className="hover:bg-gray-50 transition-colors duration-150">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{deposit.userId || 'N/A'}</div>
+                      <div className="text-sm font-medium text-gray-900">{deposit.userName}</div>
+                      <div className="text-xs text-gray-500 italic">ID: {deposit.userId}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-semibold text-gray-900">
@@ -426,6 +465,10 @@ const DepositsPage = () => {
             </div>
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500 mb-1">User Name</h4>
+                  <p className="text-sm text-gray-900">{selectedDeposit.userName || 'N/A'}</p>
+                </div>
                 <div>
                   <h4 className="text-sm font-medium text-gray-500 mb-1">User ID</h4>
                   <p className="text-sm text-gray-900">{selectedDeposit.userId || 'N/A'}</p>
