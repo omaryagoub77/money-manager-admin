@@ -511,7 +511,7 @@ const Users = () => {
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Message</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Proof</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                          {/* <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th> */}
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
@@ -547,7 +547,7 @@ const Users = () => {
                                 'N/A'
                               )}
                             </td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
+                            {/* <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
                               {deposit.status === 'pending' && (
                                 <div className="flex space-x-2">
                                   <button
@@ -576,7 +576,7 @@ const Users = () => {
                                   </button>
                                 </div>
                               )}
-                            </td>
+                            </td> */}
                           </tr>
                         ))}
                       </tbody>

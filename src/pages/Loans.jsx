@@ -13,71 +13,73 @@ import {
 } from "lucide-react";
 
 const CashOut = () => {
-  const [loans, setloans] = useState([]);
+  const [loans, setLoans] = useState([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [processing, setProcessing] = useState({});
 
+  // 🟢 Listen to USERS collection in real-time
   useEffect(() => {
-    console.log("CashOut: Starting data fetch...");
-    
-    // Real-time listener for loans, ordered by timestamp descending
-    const q = query(collection(db, "loans"), orderBy("timestamp", "desc"));
-    
-    const unsub = onSnapshot(q, 
+    const userQuery = query(collection(db, "users"));
+    const unsubUsers = onSnapshot(userQuery, 
+      (snapshot) => {
+        const userData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setUsers(userData);
+      },
+      (err) => {
+        console.error("Error loading users:", err);
+        setError("Failed to load users: " + err.message);
+      }
+    );
+    return () => unsubUsers();
+  }, []);
+
+  // 🟣 Listen to LOANS collection and merge with USERS
+  useEffect(() => {
+    const loanQuery = query(collection(db, "loans"), orderBy("timestamp", "desc"));
+    const unsubLoans = onSnapshot(
+      loanQuery,
       (snapshot) => {
         try {
-          console.log("CashOut: Snapshot received");
-          console.log("CashOut: Number of docs in snapshot:", snapshot.docs.length);
-          
-          if (snapshot.docs.length === 0) {
-            console.log("CashOut: No documents found in 'loans' collection");
-          }
-          
-          const data = snapshot.docs.map((doc) => {
-            const docData = doc.data();
-            console.log("CashOut: Document ID:", doc.id, "Data:", docData);
+          const loanData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+
+          // Merge each loan with corresponding user's name
+          const mergedData = loanData.map(loan => {
+           const user = users.find((u) => u.uid === loan.userId);
             return {
-              id: doc.id,
-              ...docData,
+              ...loan,
+              userName: user ? user.fullName || "Unnamed User" : "Unknown User",
             };
           });
-          
-          console.log("CashOut: Processed data:", data);
-          setloans(data);
+
+          setLoans(mergedData);
           setLoading(false);
-          console.log("CashOut: Data fetch completed");
         } catch (err) {
-          console.error("CashOut: Error processing snapshot:", err);
-          setError("Error processing cashout data: " + err.message);
+          console.error("Error merging loan data:", err);
+          setError("Error processing loan data: " + err.message);
           setLoading(false);
         }
       },
       (err) => {
-        console.error("CashOut: Firebase error:", err);
-        console.error("CashOut: Firebase error code:", err.code);
-        console.error("CashOut: Firebase error message:", err.message);
-        
-        if (err.code === 'permission-denied') {
-          setError("Permission denied. Check Firestore security rules.");
-        } else if (err.code === 'not-found') {
-          setError("Collection 'loans' not found.");
-        } else {
-          setError("Failed to load loans: " + err.message);
-        }
-        
+        console.error("Firestore error:", err);
+        setError("Failed to load loans: " + err.message);
         setLoading(false);
       }
     );
 
-    return () => {
-      console.log("CashOut: Unsubscribing from listener");
-      unsub();
-    };
-  }, []);
+    return () => unsubLoans();
+  }, [users]);
 
+  // 🔵 Utility functions
   const getStatusClass = (status) => {
     switch (status) {
       case "accepted":
@@ -85,68 +87,56 @@ const CashOut = () => {
       case "denied":
         return "bg-red-100 text-red-800";
       case "Pending":
+      case "pending":
         return "bg-yellow-100 text-yellow-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
   };
 
-  // Function to update cashout status
-  const updateloanstatus = async (cashoutId, newStatus) => {
+  const updateLoanStatus = async (loanId, newStatus) => {
     try {
-      const cashoutRef = doc(db, "loans", cashoutId);
-      await updateDoc(cashoutRef, {
-        status: newStatus
-      });
-      console.log(`Cashout ${cashoutId} status updated to ${newStatus}`);
+      const loanRef = doc(db, "loans", loanId);
+      await updateDoc(loanRef, { status: newStatus });
+      console.log(`Loan ${loanId} status updated to ${newStatus}`);
     } catch (err) {
-      console.error("Error updating cashout status:", err);
-      setError("Failed to update cashout status: " + err.message);
+      console.error("Error updating loan status:", err);
+      setError("Failed to update loan status: " + err.message);
     }
   };
 
-  // Function to format timestamp
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return 'N/A';
-    
-    // Handle Firestore timestamp object
     if (timestamp.seconds) {
       const date = new Date(timestamp.seconds * 1000);
       return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
     }
-    
-    // Handle JavaScript Date object
     if (timestamp.toDate) {
       const date = timestamp.toDate();
       return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
     }
-    
     return timestamp.toString();
   };
 
-  // Calculate stats
-  const totalloans = loans.reduce((sum, cashout) => sum + (parseFloat(cashout.amount) || 0), 0);
-  const pendingloans = loans.filter(cashout => cashout.status === 'pending').length;
-  const paidloans = loans.filter(cashout => cashout.status === 'accepted').length;
-  const declinedloans = loans.filter(cashout => cashout.status === 'denied').length;
-  
-  // New calculated values
-  const totalPaidAmount = loans
-    .filter(cashout => cashout.status === 'accepted')
-    .reduce((sum, cashout) => sum + (parseFloat(cashout.amount) || 0), 0);
-  
-  const totalDeclinedAmount = loans
-    .filter(cashout => cashout.status === 'denied')
-    .reduce((sum, cashout) => sum + (parseFloat(cashout.amount) || 0), 0);
+  // 🧮 Calculations
+  const totalLoans = loans.reduce((sum, l) => sum + (parseFloat(l.amount) || 0), 0);
+  const pendingLoans = loans.filter(l => l.status === 'pending').length;
+  const paidLoans = loans.filter(l => l.status === 'accepted').length;
+  const declinedLoans = loans.filter(l => l.status === 'denied').length;
+  const totalPaidAmount = loans.filter(l => l.status === 'accepted').reduce((sum, l) => sum + (parseFloat(l.amount) || 0), 0);
+  const totalDeclinedAmount = loans.filter(l => l.status === 'denied').reduce((sum, l) => sum + (parseFloat(l.amount) || 0), 0);
 
-  // Filter loans based on search term and status filter
-  const filteredloans = loans.filter(cashout => {
-    const matchesSearch = cashout.userId?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          cashout.message?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'All' || cashout.status === statusFilter;
+  // 🔍 Filters
+  const filteredLoans = loans.filter(l => {
+    const matchesSearch = 
+      (l.userName?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (l.userId?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (l.message?.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesStatus = statusFilter === 'All' || l.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
+  // 🕓 Loading and error states
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -172,8 +162,6 @@ const CashOut = () => {
     );
   }
 
-  console.log("CashOut: Rendering with loans array length:", loans.length);
-
   return (
     <div className="space-y-6">
       {/* Summary cards */}
@@ -182,7 +170,7 @@ const CashOut = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500">Total loans</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900">${totalloans.toFixed(2)}</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900">${totalLoans.toFixed(2)}</p>
             </div>
             <div className="p-3 rounded-full bg-blue-100">
               <CreditCard className="h-6 w-6 text-blue-600" />
@@ -194,7 +182,7 @@ const CashOut = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500">Pending loans</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900">{pendingloans}</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900">{pendingLoans}</p>
             </div>
             <div className="p-3 rounded-full bg-yellow-100">
               <Clock className="h-6 w-6 text-yellow-600" />
@@ -206,7 +194,7 @@ const CashOut = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500">Paid loans</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900">{paidloans}</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900">{paidLoans}</p>
             </div>
             <div className="p-3 rounded-full bg-green-100">
               <Banknote className="h-6 w-6 text-green-600" />
@@ -218,28 +206,26 @@ const CashOut = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500">Declined loans</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900">{declinedloans}</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900">{declinedLoans}</p>
             </div>
             <div className="p-3 rounded-full bg-red-100">
               <XCircle className="h-6 w-6 text-red-600" />
             </div>
           </div>
         </div>
-        
-        {/* New card for Total Paid Amount */}
+
         <div className="bg-white rounded-2xl shadow-sm p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">Total Paid Amount</p>
+              <p className="text-sm font-medium text-gray-500">Total Accepted Amount</p>
               <p className="mt-2 text-3xl font-bold text-gray-900">${totalPaidAmount.toFixed(2)}</p>
             </div>
             <div className="p-3 rounded-full bg-green-100">
-              <Banknote className="h-6 w-6 text-green-600" />
+              <CheckCircle className="h-6 w-6 text-green-600" />
             </div>
           </div>
         </div>
-        
-        {/* New card for Total Declined Amount */}
+
         <div className="bg-white rounded-2xl shadow-sm p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -253,7 +239,7 @@ const CashOut = () => {
         </div>
       </div>
 
-      {/* Filters and search */}
+      {/* Filters */}
       <div className="bg-white rounded-2xl shadow-sm p-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
           <h2 className="text-lg font-medium text-gray-900">Loans Records</h2>
@@ -264,7 +250,7 @@ const CashOut = () => {
               </div>
               <input
                 type="text"
-                placeholder="Search loans..."
+                placeholder="Search by name, user ID or message..."
                 className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -290,115 +276,109 @@ const CashOut = () => {
         </div>
       </div>
 
-      {/* loans table */}
+      {/* Table */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  User ID
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  User Name
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Amount
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Date
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredloans.length > 0 ? (
-                filteredloans.map((cashout) => (
-                  <tr key={cashout.id} className="hover:bg-gray-50 transition-colors duration-150">
+              {filteredLoans.length > 0 ? (
+                filteredLoans.map((loan) => (
+                  <tr key={loan.id} className="hover:bg-gray-50 transition-colors duration-150">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{cashout.userId || 'N/A'}</div>
+                      <div className="text-sm font-semibold text-gray-900">{loan.userName}</div>
+                      <div className="text-xs text-gray-500 italic">ID: {loan.userId}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-semibold text-gray-900">
-                        ${cashout.amount ? parseFloat(cashout.amount).toFixed(2) : '0.00'}
+                        ${loan.amount ? parseFloat(loan.amount).toFixed(2) : '0.00'}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(
-                          cashout.status || "pending"
-                        )}`}
-                      >
-                        {cashout.status === "accepted" ? "Paid" : cashout.status || "Pending"}
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(loan.status)}`}>
+                        {loan.status === "accepted" ? "Paid" : loan.status || "Pending"}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatTimestamp(cashout.timestamp)}
+                      {formatTimestamp(loan.timestamp)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center space-x-3">
-                        {cashout.status === 'pending' ? (
+                        {loan.status === 'pending' ? (
                           <div className="flex items-center space-x-2">
                             <button
-                              disabled={!!processing[cashout.id]}
+                              disabled={!!processing[loan.id]}
                               onClick={async () => {
-                                const ok = window.confirm('Mark this cashout as Paid?');
+                                const ok = window.confirm('Mark this loan as Paid?');
                                 if (!ok) return;
-                                setProcessing(prev => ({ ...prev, [cashout.id]: true }));
+                                setProcessing(prev => ({ ...prev, [loan.id]: true }));
                                 try {
-                                  await updateloanstatus(cashout.id, "accepted");
-                                  console.log('Cashout paid:', cashout.id);
+                                  await updateLoanStatus(loan.id, "accepted");
                                 } finally {
                                   setProcessing(prev => {
                                     const copy = { ...prev };
-                                    delete copy[cashout.id];
+                                    delete copy[loan.id];
                                     return copy;
                                   });
                                 }
                               }}
                               className="px-3 py-1 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors duration-200 disabled:opacity-50"
                             >
-                              {processing[cashout.id] ? 'Processing...' : 'Pay'}
+                              {processing[loan.id] ? 'Processing...' : 'Pay'}
                             </button>
 
                             <button
-                              disabled={!!processing[cashout.id]}
+                              disabled={!!processing[loan.id]}
                               onClick={async () => {
-                                const ok = window.confirm('Mark this cashout as Declined?');
+                                const ok = window.confirm('Mark this loan as Declined?');
                                 if (!ok) return;
-                                setProcessing(prev => ({ ...prev, [cashout.id]: true }));
+                                setProcessing(prev => ({ ...prev, [loan.id]: true }));
                                 try {
-                                  await updateloanstatus(cashout.id, "denied");
-                                  console.log('Cashout declined:', cashout.id);
+                                  await updateLoanStatus(loan.id, "denied");
                                 } finally {
                                   setProcessing(prev => {
                                     const copy = { ...prev };
-                                    delete copy[cashout.id];
+                                    delete copy[loan.id];
                                     return copy;
                                   });
                                 }
                               }}
                               className="px-3 py-1 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors duration-200 disabled:opacity-50"
                             >
-                              {processing[cashout.id] ? 'Processing...' : 'Decline'}
+                              {processing[loan.id] ? 'Processing...' : 'Decline'}
                             </button>
                           </div>
                         ) : (
-                          <span className="text-sm text-gray-500">{cashout.status === 'accepted' ? 'Paid' : cashout.status || 'No actions'}</span>
+                          <span className="text-sm text-gray-500">{loan.status === 'accepted' ? 'Paid' : loan.status}</span>
                         )}
 
-                        {/* If the cashout has an image/proof url show a view button */}
-                        {cashout.imageUrl ? (
+                        {loan.imageUrl && (
                           <button
-                            onClick={() => window.open(cashout.imageUrl, '_blank')}
+                            onClick={() => window.open(loan.imageUrl, '_blank')}
                             className="text-indigo-600 hover:text-indigo-900 flex items-center"
-                            title="View proof in new tab"
+                            title="View proof"
                           >
                             <Wallet className="h-4 w-4" />
                           </button>
-                        ) : null}
+                        )}
                       </div>
                     </td>
                   </tr>

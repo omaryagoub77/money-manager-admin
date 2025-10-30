@@ -82,11 +82,11 @@ const DepositsPage = () => {
 
   const getStatusClass = (status) => {
     switch (status) {
-      case "Accepted":
+      case "accepted":
         return "bg-green-100 text-green-800";
-      case "Denied":
+      case "denied":
         return "bg-red-100 text-red-800";
-      case "Pending":
+      case "pending":
         return "bg-yellow-100 text-yellow-800";
       default:
         return "bg-gray-100 text-gray-800";
@@ -128,9 +128,9 @@ const DepositsPage = () => {
 
   // Calculate stats
   const totalDeposits = deposits.reduce((sum, deposit) => sum + (parseFloat(deposit.amount) || 0), 0);
-  const pendingDeposits = deposits.filter(deposit => deposit.status === 'Pending').length;
-  const acceptedDeposits = deposits.filter(deposit => deposit.status === 'Accepted').length;
-  const deniedDeposits = deposits.filter(deposit => deposit.status === 'Denied').length;
+  const pendingDeposits = deposits.filter(deposit => deposit.status === 'pending').length;
+  const acceptedDeposits = deposits.filter(deposit => deposit.status === 'accepted').length;
+  const deniedDeposits = deposits.filter(deposit => deposit.status === 'denied').length;
 
   // Filter deposits based on search term and status filter
   const filteredDeposits = deposits.filter(deposit => {
@@ -257,9 +257,9 @@ const DepositsPage = () => {
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
                 <option value="All">All Statuses</option>
-                <option value="Pending">Pending</option>
-                <option value="Accepted">Accepted</option>
-                <option value="Denied">Denied</option>
+                <option value="pending">Pending</option>
+                <option value="accepted">Accepted</option>
+                <option value="denied">Denied</option>
               </select>
               <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                 <Filter className="h-5 w-5 text-gray-400" />
@@ -310,10 +310,10 @@ const DepositsPage = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
                         className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(
-                          deposit.status || "Pending"
+                          deposit.status || "pending"
                         )}`}
                       >
-                        {deposit.status || "Pending"}
+                        {deposit.status || "pending"}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -344,7 +344,7 @@ const DepositsPage = () => {
                                 if (!ok) return;
                                 setProcessing(prev => ({ ...prev, [deposit.id]: true }));
                                 try {
-                                  await updateDepositStatus(deposit.id, "Accepted");
+                                  await updateDepositStatus(deposit.id, "accepted");
                                   console.log('Deposit accepted:', deposit.id);
                                 } finally {
                                   setProcessing(prev => {
@@ -366,7 +366,7 @@ const DepositsPage = () => {
                                 if (!ok) return;
                                 setProcessing(prev => ({ ...prev, [deposit.id]: true }));
                                 try {
-                                  await updateDepositStatus(deposit.id, "Denied");
+                                  await updateDepositStatus(deposit.id, "denied");
                                   console.log('Deposit denied:', deposit.id);
                                 } finally {
                                   setProcessing(prev => {
@@ -438,10 +438,10 @@ const DepositsPage = () => {
                   <h4 className="text-sm font-medium text-gray-500 mb-1">Status</h4>
                   <span
                     className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(
-                      selectedDeposit.status || "Pending"
+                      selectedDeposit.status || "pending"
                     )}`}
                   >
-                    {selectedDeposit.status || "Pending"}
+                    {selectedDeposit.status || "pending"}
                   </span>
                 </div>
                 <div>
@@ -485,7 +485,7 @@ const DepositsPage = () => {
                   <>
                     <button
                       onClick={() => {
-                        updateDepositStatus(selectedDeposit.id, "Accepted");
+                        updateDepositStatus(selectedDeposit.id, "accepted");
                         closeImageModal();
                       }}
                       className="px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700"
@@ -494,7 +494,7 @@ const DepositsPage = () => {
                     </button>
                     <button
                       onClick={() => {
-                        updateDepositStatus(selectedDeposit.id, "Denied");
+                        updateDepositStatus(selectedDeposit.id, "denied");
                         closeImageModal();
                       }}
                       className="px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-red-600 hover:bg-red-700"

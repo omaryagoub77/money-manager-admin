@@ -24,11 +24,11 @@ import {
 
 const Dashboard = () => {
   const [totalDeposits, setTotalDeposits] = useState(0);
-  const [totalCashouts, setTotalCashouts] = useState(0);
-  const [pendingCashouts, setPendingCashouts] = useState(0);
+  const [totalloans, setTotalloans] = useState(0);
+  const [pendingloans, setPendingloans] = useState(0);
   const [totalUsers, setTotalUsers] = useState(0);
   const [depositsError, setDepositsError] = useState(false);
-  const [cashoutsError, setCashoutsError] = useState(false);
+  const [loansError, setloansError] = useState(false);
   const [usersError, setUsersError] = useState(false);
   const [chartData, setChartData] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
@@ -91,7 +91,7 @@ const Dashboard = () => {
         <div className="bg-white p-4 border border-gray-200 shadow-lg rounded-md">
           <p className="font-medium text-gray-900">{formatTooltipTime(data.timestamp)}</p>
           <p className="text-indigo-600">Deposits: ${data.deposits.toFixed(2)}</p>
-          <p className="text-red-600">Cashouts: ${data.cashouts.toFixed(2)}</p>
+          <p className="text-red-600">loans: ${data.loans.toFixed(2)}</p>
         </div>
       );
     }
@@ -99,7 +99,7 @@ const Dashboard = () => {
   };
 
   // Function to generate live scrolling data
-  const generateLiveScrollingData = (deposits, cashouts, maxPoints = 20) => {
+  const generateLiveScrollingData = (deposits, loans, maxPoints = 20) => {
     const combined = [];
 
     deposits.forEach((d) => {
@@ -108,17 +108,17 @@ const Dashboard = () => {
         timestamp,
         name: timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         deposits: Number(d.amount) || 0,
-        cashouts: 0,
+        loans: 0,
       });
     });
 
-    cashouts.forEach((c) => {
+    loans.forEach((c) => {
       const timestamp = c.timestamp?.toDate?.() || new Date(c.timestamp);
       combined.push({
         timestamp,
         name: timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         deposits: 0,
-        cashouts: Number(c.amount) || 0,
+        loans: Number(c.amount) || 0,
       });
     });
 
@@ -133,13 +133,13 @@ const Dashboard = () => {
     if (!db) {
       console.error('Firestore database instance not available');
       setDepositsError(true);
-      setCashoutsError(true);
+      setloansError(true);
       return;
     }
 
     // Store raw data for live chart
     let depositsData = [];
-    let cashoutsData = [];
+    let loansData = [];
 
     // Set up real-time listener for deposits
     const depositsQuery = query(collection(db, 'deposits'), orderBy('timestamp', 'desc'));
@@ -164,7 +164,7 @@ const Dashboard = () => {
           setDepositsError(false);
           
           // Update chart data with live scrolling
-          const liveData = generateLiveScrollingData(depositsData, cashoutsData);
+          const liveData = generateLiveScrollingData(depositsData, loansData);
           setChartData(liveData);
           
           // Update recent activity
@@ -189,40 +189,40 @@ const Dashboard = () => {
       }
     );
 
-    // Set up real-time listener for cashouts
-    const cashoutsQuery = query(collection(db, 'cashouts'), orderBy('timestamp', 'desc'));
-    const unsubscribeCashouts = onSnapshot(
-      cashoutsQuery,
+    // Set up real-time listener for loans
+    const loansQuery = query(collection(db, 'loans'), orderBy('timestamp', 'desc'));
+    const unsubscribeloans = onSnapshot(
+      loansQuery,
       (snapshot) => {
         try {
           let sum = 0;
           let pendingCount = 0;
-          cashoutsData = [];
+          loansData = [];
           snapshot.forEach((doc) => {
             const data = doc.data();
             if (data.amount) {
               sum += parseFloat(data.amount);
             }
-            if (data.status === 'Pending') {
+            if (data.status === 'pending') {
               pendingCount += 1;
             }
-            cashoutsData.push({
+            loansData.push({
               id: doc.id,
               ...data,
               timestamp: data.timestamp
             });
           });
-          setTotalCashouts(sum);
-          setPendingCashouts(pendingCount);
-          setCashoutsError(false);
+          setTotalloans(sum);
+          setPendingloans(pendingCount);
+          setloansError(false);
           
           // Update chart data with live scrolling
-          const liveData = generateLiveScrollingData(depositsData, cashoutsData);
+          const liveData = generateLiveScrollingData(depositsData, loansData);
           setChartData(liveData);
           
           // Update recent activity
           setRecentActivity(prev => {
-            const newActivity = cashoutsData.slice(0, 3).map(cashout => ({
+            const newActivity = loansData.slice(0, 3).map(cashout => ({
               id: cashout.id,
               type: 'cashout',
               userId: cashout.userId,
@@ -233,20 +233,20 @@ const Dashboard = () => {
             return [...newActivity, ...prev].slice(0, 6);
           });
         } catch (error) {
-          console.error('Error processing cashouts data:', error);
-          setCashoutsError(true);
+          console.error('Error processing loans data:', error);
+          setloansError(true);
         }
       },
       (error) => {
-        console.error('Error fetching cashouts:', error);
-        setCashoutsError(true);
+        console.error('Error fetching loans:', error);
+        setloansError(true);
       }
     );
 
     // Clean up listeners on component unmount
     return () => {
       unsubscribeDeposits();
-      unsubscribeCashouts();
+      unsubscribeloans();
     };
   }, []);
 
@@ -278,8 +278,8 @@ const Dashboard = () => {
     },
     {
       id: 2,
-      name: 'Total Cashouts',
-      value: cashoutsError ? 'N/A' : formatCurrency(totalCashouts),
+      name: 'Total loans',
+      value: loansError ? 'N/A' : formatCurrency(totalloans),
       change: '+8.2%',
       changeType: 'positive',
       icon: CreditCard,
@@ -287,8 +287,8 @@ const Dashboard = () => {
     },
     {
       id: 3,
-      name: 'Pending Cashouts',
-      value: cashoutsError ? 'N/A' : pendingCashouts,
+      name: 'Pending loans',
+      value: loansError ? 'N/A' : pendingloans,
       change: '+3.1%',
       changeType: 'negative',
       icon: Activity,
@@ -380,9 +380,9 @@ const Dashboard = () => {
                   animationEasing="ease-in-out"
                 />
                 <Bar 
-                  dataKey="cashouts" 
+                  dataKey="loans" 
                   fill="#ef4444" 
-                  name="Cashouts"
+                  name="loans"
                   isAnimationActive={true}
                   animationDuration={800}
                   animationEasing="ease-in-out"
@@ -427,9 +427,9 @@ const Dashboard = () => {
                 />
                 <Line 
                   type="monotone" 
-                  dataKey="cashouts" 
+                  dataKey="loans" 
                   stroke="#ef4444" 
-                  name="Cashouts"
+                  name="loans"
                   isAnimationActive={true}
                   animationDuration={800}
                   animationEasing="ease-in-out"

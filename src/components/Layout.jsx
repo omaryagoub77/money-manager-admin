@@ -12,8 +12,9 @@ import {
   Bell,
   User,
   MessageCircleMore,
-  BanknoteArrowDown,
-  PiggyBank
+  HandCoins,
+  PiggyBank,
+  BanknoteArrowDown
 } from 'lucide-react';
 
 const Layout = () => {
@@ -23,9 +24,10 @@ const Layout = () => {
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Deposits', href: '/deposits', icon: PiggyBank },
-    { name: 'loans', href: '/loans', icon: CreditCard },
+    { name: 'loans', href: '/loans', icon: HandCoins },
     { name: 'Chat', href: '/chat', icon:   MessageCircleMore },
     { name: 'Users', href: '/users', icon: Users },
+    { name: 'Payback', href: '/payback', icon: BanknoteArrowDown },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
 
