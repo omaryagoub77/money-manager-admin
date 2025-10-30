@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebaseConfig';
-import { collection, query, onSnapshot, serverTimestamp, updateDoc, doc, getDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, serverTimestamp, updateDoc, doc } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import { Check, X, Eye, Search } from 'lucide-react';
 
 const AdminPaybacksPage = () => {
   const { currentUser } = useAuth();
   const [allPaybacks, setAllPaybacks] = useState([]);
+  const [users, setUsers] = useState([]);
   const [fetching, setFetching] = useState(true);
   const [alert, setAlert] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -14,38 +15,39 @@ const AdminPaybacksPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [fadingCards, setFadingCards] = useState(new Set());
 
+  // Fetch all users
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const unsubscribeUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
+      const usersData = [];
+      snapshot.forEach((doc) => {
+        usersData.push({
+          id: doc.id,
+          ...doc.data()
+        });
+      });
+      setUsers(usersData);
+    }, (err) => {
+      console.error('Error fetching users:', err);
+    });
+
+    return () => unsubscribeUsers();
+  }, [currentUser]);
+
   // Fetch all loans (not just pending ones)
   useEffect(() => {
     if (!currentUser) return;
 
-    const q = query(collection(db, 'loans'));
-
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
+    const unsubscribeLoans = onSnapshot(collection(db, 'loans'), (snapshot) => {
       const paybacks = [];
       
-      for (const docSnapshot of snapshot.docs) {
-        const paybackData = {
+      snapshot.forEach((docSnapshot) => {
+        paybacks.push({
           id: docSnapshot.id,
           ...docSnapshot.data()
-        };
-        
-        // Fetch user details if not already present
-        if (!paybackData.userName && paybackData.userId) {
-          try {
-            const userDoc = await getDoc(doc(db, 'users', paybackData.userId));
-            if (userDoc.exists()) {
-              paybackData.userName = userDoc.data().name || 'Unknown User';
-              paybackData.userEmail = userDoc.data().email || 'No email provided';
-            }
-          } catch (err) {
-            console.error('Error fetching user data:', err);
-            paybackData.userName = 'Unknown User';
-            paybackData.userEmail = 'No email provided';
-          }
-        }
-        
-        paybacks.push(paybackData);
-      }
+        });
+      });
       
       // Sort by payment timestamp (newest first)
       paybacks.sort((a, b) => {
@@ -61,8 +63,18 @@ const AdminPaybacksPage = () => {
       setFetching(false);
     });
 
-    return () => unsubscribe();
+    return () => unsubscribeLoans();
   }, [currentUser]);
+
+  // Merge paybacks with user data
+  const paybacksWithUserData = allPaybacks.map(payback => {
+    const user = users.find(u => u.uid === payback.userId);
+    return {
+      ...payback,
+      userName: user?.fullName || 'Unknown User',
+      userEmail: user?.email || 'No email provided'
+    };
+  });
 
   // Show alert with auto-dismiss
   const showAlert = (message, type) => {
@@ -172,7 +184,7 @@ const AdminPaybacksPage = () => {
   };
 
   // Filter paybacks based on search term and loan status
-  const filteredPaybacks = allPaybacks.filter(payback => {
+  const filteredPaybacks = paybacksWithUserData.filter(payback => {
     // Show only accepted loans
     if (payback.status !== 'accepted') return false;
     
@@ -184,7 +196,7 @@ const AdminPaybacksPage = () => {
   });
 
   // Count pending loans for the badge
-  const pendingCount = allPaybacks.filter(
+  const pendingCount = paybacksWithUserData.filter(
     payback => payback.status === 'accepted' && payback.paymentStatus === 'pending'
   ).length;
 
