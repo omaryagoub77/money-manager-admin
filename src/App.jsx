@@ -1,4 +1,5 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
 import SignIn from './components/Chat/SignIn';
 import SignUP from './components/Chat/SignUp';
 import Profile from './pages/Profile';
@@ -9,14 +10,49 @@ import ChatPage from './pages/ChatPage';
 import Home from './pages/Home';
 import Loans from './pages/Loans';
 import Users from './pages/Users';
+import Settings from './pages/Setting';
 import Layout from './components/Layout';
+
+// Protected route component
+function ProtectedRoute({ children }) {
+  const { currentUser } = useAuth();
+  
+  if (!currentUser) {
+    return <Navigate to="/login" />;
+  }
+  
+  return children;
+}
+
+// Redirect authenticated users away from auth pages
+function RedirectAuthenticatedRoute({ children }) {
+  const { currentUser } = useAuth();
+  
+  if (currentUser) {
+    return <Navigate to="/dashboard" />;
+  }
+  
+  return children;
+}
 
 function App() {
   return (
     <Routes>
-      <Route path="/signin" element={<SignIn />} />
-      <Route path="/signup" element={<SignUP />} />
-      <Route path="/" element={<Layout />}>
+      <Route path="/login" element={
+        <RedirectAuthenticatedRoute>
+          <SignIn />
+        </RedirectAuthenticatedRoute>
+      } />
+      <Route path="/signup" element={
+        <RedirectAuthenticatedRoute>
+          <SignUP />
+        </RedirectAuthenticatedRoute>
+      } />
+      <Route path="/" element={
+        <ProtectedRoute>
+          <Layout />
+        </ProtectedRoute>
+      }>
         <Route index element={<Dashboard />} />
         <Route path="profile" element={<Profile />} />
         <Route path="dashboard" element={<Dashboard />} />
@@ -24,6 +60,7 @@ function App() {
         <Route path="loans" element={<Loans />} />
         <Route path="payback" element={<Paybackloans />} />
         <Route path="users" element={<Users />} />
+        <Route path="settings" element={<Settings />} />
         <Route path="chat" element={<ChatPage />} />
       </Route>
     </Routes>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { 
-  
   LayoutDashboard,
   CreditCard, 
   Users, 
@@ -14,18 +14,30 @@ import {
   MessageCircleMore,
   HandCoins,
   PiggyBank,
-  BanknoteArrowDown
+  BanknoteArrowDown,
+  LogOut
 } from 'lucide-react';
 
 const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Failed to log out', error);
+    }
+  };
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Deposits', href: '/deposits', icon: PiggyBank },
     { name: 'loans', href: '/loans', icon: HandCoins },
-    { name: 'Chat', href: '/chat', icon:   MessageCircleMore },
+    { name: 'Chat', href: '/chat', icon: MessageCircleMore },
     { name: 'Users', href: '/users', icon: Users },
     { name: 'Payback', href: '/payback', icon: BanknoteArrowDown },
     { name: 'Settings', href: '/settings', icon: Settings },
@@ -79,9 +91,9 @@ const Layout = () => {
             </ul>
           </nav>
           
-          {/* User profile */}
+          {/* User profile and logout */}
           <div className="px-4 py-6 border-t border-gray-200">
-            <div className="flex items-center">
+            <div className="flex items-center mb-4">
               <div className="flex-shrink-0">
                 <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
                   <User className="h-6 w-6 text-indigo-600" />
@@ -92,6 +104,13 @@ const Layout = () => {
                 <p className="text-xs text-gray-500">admin@moneybox.com</p>
               </div>
             </div>
+            <button
+              onClick={handleLogout}
+              className="flex items-center w-full px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+            >
+              <LogOut className="mr-3 h-5 w-5" />
+              Logout
+            </button>
           </div>
         </div>
       </div>
@@ -139,6 +158,14 @@ const Layout = () => {
                   <User className="h-5 w-5 text-indigo-600" />
                 </div>
               </div>
+              
+              <button
+                onClick={handleLogout}
+                className="flex items-center text-sm font-medium text-gray-700 hover:text-gray-900"
+              >
+                <LogOut className="mr-2 h-5 w-5" />
+                Logout
+              </button>
             </div>
           </div>
         </header>

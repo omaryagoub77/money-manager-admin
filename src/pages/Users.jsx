@@ -407,6 +407,14 @@ const Users = () => {
                     <p className="text-sm text-gray-900">{selectedUser.phoneNumber || 'N/A'}</p>
                   </div>
                   <div>
+                    <p className="text-sm font-medium text-gray-500">MoMo Number</p>
+                    <p className="text-sm text-gray-900">{selectedUser.momoNumber || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Credit card Number</p>
+                    <p className="text-sm text-gray-900">{selectedUser.creditCardNumber || 'N/A'}</p>
+                  </div>
+                  <div>
                     <p className="text-sm font-medium text-gray-500">Gender</p>
                     <p className="text-sm text-gray-900 capitalize">{selectedUser.gender || 'N/A'}</p>
                   </div>
