@@ -53,7 +53,7 @@ function App() {
           <Layout />
         </ProtectedRoute>
       }>
-        <Route index element={<Dashboard />} />
+        <Route index element={<Home />} />
         <Route path="profile" element={<Profile />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="deposits" element={<DepositsPage />} />

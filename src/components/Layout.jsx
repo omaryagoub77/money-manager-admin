@@ -20,6 +20,7 @@ import {
 
 const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { currentUser } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useAuth();
@@ -96,12 +97,16 @@ const Layout = () => {
             <div className="flex items-center mb-4">
               <div className="flex-shrink-0">
                 <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
-                  <User className="h-6 w-6 text-indigo-600" />
+                     <div className="w-11 h-11 rounded-full flex items-center justify-center bg-gradient-to-br from-indigo-500 to-indigo-600 text-white font-bold shadow-md">
+            {currentUser?.email?.charAt(0).toUpperCase() || 'U'}
+          </div>
                 </div>
               </div>
               <div className="ml-3">
-                <p className="text-sm font-medium text-gray-900">Admin User</p>
-                <p className="text-xs text-gray-500">admin@moneybox.com</p>
+                <p className="text-sm font-medium text-gray-900">Admin  is           {currentUser?.email?.slice(0 , 4).toUpperCase() || 'U'}
+</p>
+                <p className="text-xs text-gray-500">{currentUser?.email?.slice(0 , 104).toLowerCase() || 'U'}
+</p>
               </div>
             </div>
             <button
