@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
@@ -34,6 +34,37 @@ const Layout = () => {
     }
   };
 
+  // Close sidebar when resizing to larger screens
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) { // lg breakpoint
+        setSidebarOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Close sidebar when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (sidebarOpen && 
+          !e.target.closest('.sidebar-content') && 
+          !e.target.closest('.sidebar-toggle')) {
+        setSidebarOpen(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [sidebarOpen]);
+
+  // Close sidebar when route changes
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location.pathname]);
+
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Deposits', href: '/deposits', icon: PiggyBank },
@@ -49,7 +80,7 @@ const Layout = () => {
   return (
     <div className="flex h-screen w-screen max-w-full bg-gray-50">
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 sidebar-content`}>
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
@@ -103,7 +134,7 @@ const Layout = () => {
                 </div>
               </div>
               <div className="ml-3">
-                <p className="text-sm font-medium text-gray-900">Admin  is           {currentUser?.email?.slice(0 , 4).toUpperCase() || 'U'}
+                <p className="text-sm font-medium text-gray-900">Admin  is           {currentUser?.email?.slice(0 , 5).toUpperCase() || 'U'}
 </p>
                 <p className="text-xs text-gray-500">{currentUser?.email?.slice(0 , 104).toLowerCase() || 'U'}
 </p>
@@ -128,7 +159,7 @@ const Layout = () => {
             <div className="flex items-center">
               <button 
                 onClick={() => setSidebarOpen(true)} 
-                className="lg:hidden text-gray-500 hover:text-gray-700 mr-4"
+                className="lg:hidden text-gray-500 hover:text-gray-700 mr-4 sidebar-toggle"
               >
                 <Menu size={20} />
               </button>
