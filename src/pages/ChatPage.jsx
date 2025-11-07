@@ -10,14 +10,14 @@ const ChatPage = () => {
         </div>
       </header> */}
       <main>
-        <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+              <ChatBox />
+        {/* <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
           <div className="px-4 py-8 sm:px-0">
             <div className="bg-white shadow overflow-hidden sm:rounded-lg p-6">
-              <ChatBox />
               
             </div>
           </div>
-        </div>
+        </div> */}
       </main>
     </div>
   );

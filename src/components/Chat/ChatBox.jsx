@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../../firebaseConfig';
-import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
 
 export default function ChatBox() {
@@ -8,10 +8,23 @@ export default function ChatBox() {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
-  const [onlineUsers, setOnlineUsers] = useState(new Set());
+  const [onlineUsers, setOnlineUsers] = useState({});
   const [users, setUsers] = useState({});
   const messagesEndRef = useRef();
   const lastActiveIntervalRef = useRef();
+  
+  // Helper function to determine if a user is online based on lastActive timestamp
+  const isUserOnline = (lastActive) => {
+    if (!lastActive) return false;
+    
+    // Convert Firestore timestamp to JavaScript Date
+    const lastActiveDate = lastActive.toDate ? lastActive.toDate() : new Date(lastActive);
+    const currentTime = new Date();
+    
+    // Consider user online if they were active in the last 2 minutes
+    const timeDiffInMinutes = (currentTime - lastActiveDate) / (1000 * 60);
+    return timeDiffInMinutes < 2;
+  };
   
   // Set user online status when component mounts
   useEffect(() => {
@@ -104,32 +117,27 @@ export default function ChatBox() {
     
     const unsubscribe = onSnapshot(collection(db, 'users'), snapshot => {
       const usersData = {};
-      const onlineUsersSet = new Set();
+      const onlineUsersData = {};
       
       snapshot.forEach(doc => {
         const userData = doc.data();
         usersData[doc.id] = userData;
         
-        // Check if user is online (active in the last 2 minutes)
-        if (userData.isOnline && userData.lastActive) {
-          const lastActiveTime = userData.lastActive.toDate();
-          const currentTime = new Date();
-          const timeDiff = (currentTime - lastActiveTime) / (1000 * 60); // in minutes
-          
-          // Consider user online if they were active in the last 2 minutes
-          if (timeDiff < 2) {
-            onlineUsersSet.add(doc.id);
-          } else {
-            // If user was marked online but hasn't been active recently, update their status
-            updateDoc(doc(db, 'users', doc.id), {
-              isOnline: false
-            });
-          }
+        // Check if user is online based on lastActive timestamp (regardless of isOnline flag)
+        const online = isUserOnline(userData.lastActive);
+        
+        if (online) {
+          // Store online user data in object format for easy mapping and sorting
+          onlineUsersData[doc.id] = {
+            displayName: userData.displayName || userData.email?.split('@')[0] || 'Unknown',
+            isOnline: userData.isOnline || false,
+            lastActive: userData.lastActive
+          };
         }
       });
       
       setUsers(usersData);
-      setOnlineUsers(onlineUsersSet);
+      setOnlineUsers(onlineUsersData);
     });
     
     return unsubscribe;
@@ -165,6 +173,12 @@ export default function ChatBox() {
     return date.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
   };
 
+  // Get sorted online users by display name
+  const getSortedOnlineUsers = () => {
+    return Object.entries(onlineUsers)
+      .sort(([, a], [, b]) => a.displayName.localeCompare(b.displayName));
+  };
+
   // Show a message if user is not logged in
   if (!currentUser) {
     return (
@@ -178,27 +192,31 @@ export default function ChatBox() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-b from-gray-50 to-gray-100 font-sans text-gray-800 max-w-4xl mx-auto w-full">
+    <div className="flex flex-col w-full h-screen bg-gradient-to-b from-gray-50 to-gray-100 font-sans text-gray-800 max-w-4xl mx-auto w-full">
       {/* Chat Header */}
-      <div className="sticky top-4 z-30 flex items-center gap-3 p-4 m-4 bg-white/70 backdrop-blur-md rounded-2xl shadow-lg transition-all duration-300 hover:shadow-xl">
-        <div className="relative">
-          <div className="w-11 h-11 rounded-full flex items-center justify-center bg-gradient-to-br from-indigo-500 to-indigo-600 text-white font-bold shadow-md">
-            {currentUser?.email?.charAt(0).toUpperCase() || 'U'}
-          </div>
-          {/* Online status indicator for current user */}
-          <div 
-            className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"
-            title="Online"
-          ></div>
-        </div>
-        <div className="flex-1">
-          <h1 className="text-lg font-bold text-gray-900">Chat Room</h1>
-          <p className="text-sm text-gray-500">{messages.length} Messages</p>
-        </div>
-        {/* Online users count */}
-        <div className="flex items-center gap-1 bg-white/80 px-3 py-1 rounded-full">
+    
+
+      {/* Online Users Bar */}
+      <div className="mx-4 mb-2 bg-white/70 backdrop-blur-md rounded-xl shadow-sm p-3">
+      
+        <div className="flex flex-wrap gap-2">
           <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-          <span className="text-xs text-gray-600">{onlineUsers.size} online</span>
+          <span className="text-xs text-gray-600">{Object.keys(onlineUsers).length} online</span>
+          <br />
+          <p className="text-sm text-gray-500">{messages.length} Messages</p>
+
+          {/* {getSortedOnlineUsers().map(([userId, userData]) => (
+            <div key={userId} className="flex items-center gap-1 bg-white/80 px-2 py-1 rounded-full">
+              <div className="w-5 h-5 rounded-full flex items-center justify-center bg-indigo-100 text-indigo-600 text-xs font-bold">
+                {userData.displayName.charAt(0).toUpperCase()}
+              </div>
+              <span className="text-xs text-gray-700">{userData.displayName}</span>
+
+            </div>
+          ))}
+          {Object.keys(onlineUsers).length === 0 && (
+            <div className="text-xs text-gray-400 italic">No users online</div>
+          )} */}
         </div>
       </div>
 
@@ -229,12 +247,12 @@ export default function ChatBox() {
                     {msg.userName ? msg.userName.charAt(0).toUpperCase() : 'U'}
                   </div>
                   {/* Online status indicator for message sender */}
-                  {onlineUsers.has(msg.userId) && (
-                    <div 
-                      className="absolute  bottom-[60px] right-7 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white"
-                      title="Online"
-                    ></div>
-                  )}
+                  <div 
+                    className={`absolute bottom-[60px] right-7 w-3.5 h-3.5 rounded-full border-2 border-white ${
+                      onlineUsers[msg.userId] ? 'bg-green-500' : 'bg-gray-400'
+                    }`}
+                    title={onlineUsers[msg.userId] ? 'Online' : 'Offline'}
+                  ></div>
                 </div>
               )}
               <div className={`max-w-[72%] p-3 rounded-2xl relative shadow-md transition-all duration-300 hover:shadow-lg ${
@@ -254,8 +272,10 @@ export default function ChatBox() {
                   </div>
                   {/* Online status indicator for current user */}
                   <div 
-                    className="absolute bottom-[60px] right-6 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white"
-                    title="Online"
+                    className={`absolute bottom-[60px] right-6 w-3.5 h-3.5 rounded-full border-2 border-white ${
+                      isUserOnline(users[currentUser?.uid]?.lastActive) ? 'bg-green-500' : 'bg-gray-400'
+                    }`}
+                    title={isUserOnline(users[currentUser?.uid]?.lastActive) ? 'Online' : 'Offline'}
                   ></div>
                 </div>
               )}
