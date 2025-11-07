@@ -231,7 +231,7 @@ export default function ChatBox() {
                   {/* Online status indicator for message sender */}
                   {onlineUsers.has(msg.userId) && (
                     <div 
-                      className="absolute bottom-0 right-2 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white"
+                      className="absolute  bottom-[60px] right-7 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white"
                       title="Online"
                     ></div>
                   )}
@@ -254,7 +254,7 @@ export default function ChatBox() {
                   </div>
                   {/* Online status indicator for current user */}
                   <div 
-                    className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white"
+                    className="absolute bottom-[60px] right-6 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white"
                     title="Online"
                   ></div>
                 </div>
