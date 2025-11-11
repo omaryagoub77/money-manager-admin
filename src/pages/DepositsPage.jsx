@@ -308,7 +308,7 @@ const DepositsPage = () => {
       </div>
 
       {/* Deposits table */}
-      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-sm overflow-scroll">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -453,7 +453,7 @@ const DepositsPage = () => {
       {/* Image Preview Modal */}
       {showModal && selectedDeposit && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+          <div className="bg-white  rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-scroll">
             <div className="p-6 border-b border-gray-200 flex justify-between items-center">
               <h3 className="text-lg font-medium text-gray-900">Deposit Proof</h3>
               <button 
@@ -499,7 +499,7 @@ const DepositsPage = () => {
               
               <div className="mt-6">
                 <h4 className="text-sm font-medium text-gray-500 mb-2">Proof Image</h4>
-                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <div className="border border-gray-200 rounded-lg ">
                   {selectedDeposit.imageUrl ? (
                     <img 
                       src={selectedDeposit.imageUrl} 

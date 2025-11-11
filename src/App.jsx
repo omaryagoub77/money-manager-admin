@@ -12,6 +12,8 @@ import Loans from './pages/Loans';
 import Users from './pages/Users';
 import Settings from './pages/Setting';
 import Layout from './components/Layout';
+import AdminGate from './pages/AdminGate';
+import { useState } from 'react';
 
 // Protected route component
 function ProtectedRoute({ children }) {
@@ -36,6 +38,14 @@ function RedirectAuthenticatedRoute({ children }) {
 }
 
 function App() {
+  const [accessGranted, setAccessGranted] = useState(false);
+
+  // Show AdminGate before anything else. Once the password is validated
+  // (onAccessGranted called), render the rest of the app.
+  if (!accessGranted) {
+    return <AdminGate onAccessGranted={() => setAccessGranted(true)} />;
+  }
+
   return (
     <Routes>
       <Route path="/login" element={
@@ -48,12 +58,13 @@ function App() {
           <SignUP />
         </RedirectAuthenticatedRoute>
       } />
+
       <Route path="/" element={
         <ProtectedRoute>
           <Layout />
         </ProtectedRoute>
       }>
-        <Route index element={<Home />} />
+        <Route index element={<Dashboard />} />
         <Route path="profile" element={<Profile />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="deposits" element={<DepositsPage />} />

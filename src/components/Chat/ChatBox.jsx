@@ -192,7 +192,7 @@ export default function ChatBox() {
   }
 
   return (
-    <div className="flex flex-col w-full h-screen bg-gradient-to-b from-gray-50 to-gray-100 font-sans text-gray-800 max-w-4xl mx-auto w-full">
+    <div className="flex flex-col  h-screen bg-gradient-to-b from-gray-50 to-gray-100 font-sans text-gray-800 max-w-4xl mx-auto w-full">
       {/* Chat Header */}
     
 
