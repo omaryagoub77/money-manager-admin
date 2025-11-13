@@ -34,6 +34,23 @@ const Dashboard = () => {
   const [recentActivity, setRecentActivity] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [screenSize, setScreenSize] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight
+  });
+
+  // Track screen size for responsive charts
+  useEffect(() => {
+    const handleResize = () => {
+      setScreenSize({
+        width: window.innerWidth,
+        height: window.innerHeight
+      });
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Function to format tooltip time
   const formatTooltipTime = (timestamp) => {
@@ -83,15 +100,22 @@ const Dashboard = () => {
     return () => unsub();
   }, []);
 
-  // Custom tooltip component
+  // Custom tooltip component with responsive styling
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
+      const isMobile = screenSize.width < 768;
       return (
-        <div className="bg-white p-4 border border-gray-200 shadow-lg rounded-md">
-          <p className="font-medium text-gray-900">{formatTooltipTime(data.timestamp)}</p>
-          <p className="text-indigo-600">Deposits: ${data.deposits.toFixed(2)}</p>
-          <p className="text-red-600">loans: ${data.loans.toFixed(2)}</p>
+        <div className={`bg-white border border-gray-200 shadow-lg rounded-md ${isMobile ? 'p-2' : 'p-4'}`}>
+          <p className={`font-medium text-gray-900 ${isMobile ? 'text-xs' : 'text-sm'}`}>
+            {formatTooltipTime(data.timestamp)}
+          </p>
+          <p className={`text-indigo-600 ${isMobile ? 'text-xs' : 'text-sm'}`}>
+            Deposits: ${data.deposits.toFixed(2)}
+          </p>
+          <p className={`text-red-600 ${isMobile ? 'text-xs' : 'text-sm'}`}>
+            loans: ${data.loans.toFixed(2)}
+          </p>
         </div>
       );
     }
@@ -305,6 +329,40 @@ const Dashboard = () => {
     },
   ];
 
+  // Determine responsive chart properties based on screen size
+  const getChartProps = () => {
+    const isMobile = screenSize.width < 768;
+    const isTablet = screenSize.width >= 768 && screenSize.width < 1024;
+    
+    return {
+      // Responsive margins
+      margin: {
+        top: isMobile ? 5 : 10,
+        right: isMobile ? 10 : 30,
+        left: isMobile ? 5 : 20,
+        bottom: isMobile ? 10 : 5,
+      },
+      
+      // Responsive font sizes
+      tickFontSize: isMobile ? 8 : (isTablet ? 10 : 12),
+      
+      // Responsive tick settings
+      interval: isMobile ? 'preserveStartEnd' : 0,
+      minTickGap: isMobile ? 10 : 15,
+      
+      // Responsive bar settings
+      barSize: isMobile ? 10 : 15,
+      
+      // Animation settings (optimized for mobile)
+      animationDuration: isMobile ? 500 : 800,
+      
+      // Grid settings (simplified on mobile)
+      gridStrokeDasharray: isMobile ? '2 2' : '3 3',
+    };
+  };
+
+  const chartProps = getChartProps();
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -319,72 +377,73 @@ const Dashboard = () => {
   return (
     <div className="space-y-6">
       {/* Stats cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {stats.map((stat) => (
-          <div key={stat.id} className="bg-white rounded-2xl shadow-sm p-6 transition-all duration-200 hover:shadow-md">
+          <div key={stat.id} className="bg-white rounded-2xl shadow-sm p-4 sm:p-6 transition-all duration-200 hover:shadow-md">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-500">{stat.name}</p>
-                <p className="mt-2 text-3xl font-bold text-gray-900">{stat.value}</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-500">{stat.name}</p>
+                <p className="mt-1 sm:mt-2 text-2xl sm:text-3xl font-bold text-gray-900">{stat.value}</p>
               </div>
-              <div className={`p-3 rounded-full ${stat.iconColor}`}>
-                <stat.icon className="h-6 w-6 text-white" />
+              <div className={`p-2 sm:p-3 rounded-full ${stat.iconColor}`}>
+                <stat.icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
             </div>
-            <div className="mt-4 flex items-center">
+            <div className="mt-3 sm:mt-4 flex items-center">
               {stat.changeType === 'positive' ? (
-                <ArrowUpRight className="h-4 w-4 text-green-500" />
+                <ArrowUpRight className="h-3 w-3 sm:h-4 sm:w-4 text-green-500" />
               ) : (
-                <ArrowDownRight className="h-4 w-4 text-red-500" />
+                <ArrowDownRight className="h-3 w-3 sm:h-4 sm:w-4 text-red-500" />
               )}
-              <span className={`ml-1 text-sm font-medium ${stat.changeType === 'positive' ? 'text-green-500' : 'text-red-500'}`}>
+              <span className={`ml-1 text-xs sm:text-sm font-medium ${stat.changeType === 'positive' ? 'text-green-500' : 'text-red-500'}`}>
                 {stat.change}
               </span>
-              <span className="ml-2 text-sm text-gray-500">from last month</span>
+              <span className="ml-1 sm:ml-2 text-xs sm:text-sm text-gray-500">from last month</span>
             </div>
           </div>
         ))}
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Bar chart */}
-        <div className="bg-white rounded-2xl shadow-sm p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Live Transactions</h3>
-          <div className="h-80 overflow-x-hidden">
-            <ResponsiveContainer width="100%" height="100%">
+        <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6">
+          <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">Live Transactions</h3>
+          <div className="h-64 sm:h-80 overflow-x-auto">
+            <ResponsiveContainer 
+              width="100%" 
+              height="100%"
+              minWidth={300}
+            >
               <BarChart
                 data={chartData}
-                margin={{
-                  top: 5,
-                  right: 30,
-                  left: 20,
-                  bottom: 5,
-                }}
+                margin={chartProps.margin}
               >
-                <CartesianGrid strokeDasharray="3 3" />
+                <CartesianGrid strokeDasharray={chartProps.gridStrokeDasharray} />
                 <XAxis 
                   dataKey="name" 
-                  tick={{ fontSize: 10 }}
-                  interval={0}
-                  minTickGap={15}
+                  tick={{ fontSize: chartProps.tickFontSize }}
+                  interval={chartProps.interval}
+                  minTickGap={chartProps.minTickGap}
                 />
-                <YAxis />
+                <YAxis tick={{ fontSize: chartProps.tickFontSize }} />
                 <Tooltip content={<CustomTooltip />} />
                 <Bar 
                   dataKey="deposits" 
                   fill="#4f46e5" 
                   name="Deposits"
+                  barSize={chartProps.barSize}
                   isAnimationActive={true}
-                  animationDuration={800}
+                  animationDuration={chartProps.animationDuration}
                   animationEasing="ease-in-out"
                 />
                 <Bar 
                   dataKey="loans" 
                   fill="#ef4444" 
                   name="loans"
+                  barSize={chartProps.barSize}
                   isAnimationActive={true}
-                  animationDuration={800}
+                  animationDuration={chartProps.animationDuration}
                   animationEasing="ease-in-out"
                 />
               </BarChart>
@@ -393,36 +452,36 @@ const Dashboard = () => {
         </div>
 
         {/* Line chart */}
-        <div className="bg-white rounded-2xl shadow-sm p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Transaction Trend</h3>
-          <div className="h-80 overflow-x-hidden">
-            <ResponsiveContainer width="100%" height="100%">
+        <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6">
+          <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">Transaction Trend</h3>
+          <div className="h-64 sm:h-80 overflow-x-auto">
+            <ResponsiveContainer 
+              width="100%" 
+              height="100%"
+              minWidth={300}
+            >
               <LineChart
                 data={chartData}
-                margin={{
-                  top: 5,
-                  right: 30,
-                  left: 20,
-                  bottom: 5,
-                }}
+                margin={chartProps.margin}
               >
-                <CartesianGrid strokeDasharray="3 3" />
+                <CartesianGrid strokeDasharray={chartProps.gridStrokeDasharray} />
                 <XAxis 
                   dataKey="name" 
-                  tick={{ fontSize: 10 }}
-                  interval={0}
-                  minTickGap={15}
+                  tick={{ fontSize: chartProps.tickFontSize }}
+                  interval={chartProps.interval}
+                  minTickGap={chartProps.minTickGap}
                 />
-                <YAxis />
+                <YAxis tick={{ fontSize: chartProps.tickFontSize }} />
                 <Tooltip content={<CustomTooltip />} />
                 <Line 
                   type="monotone" 
                   dataKey="deposits" 
                   stroke="#4f46e5" 
-                  activeDot={{ r: 8 }} 
+                  activeDot={{ r: screenSize.width < 768 ? 4 : 8 }} 
                   name="Deposits"
+                  strokeWidth={screenSize.width < 768 ? 1.5 : 2}
                   isAnimationActive={true}
-                  animationDuration={800}
+                  animationDuration={chartProps.animationDuration}
                   animationEasing="ease-in-out"
                 />
                 <Line 
@@ -430,8 +489,9 @@ const Dashboard = () => {
                   dataKey="loans" 
                   stroke="#ef4444" 
                   name="loans"
+                  strokeWidth={screenSize.width < 768 ? 1.5 : 2}
                   isAnimationActive={true}
-                  animationDuration={800}
+                  animationDuration={chartProps.animationDuration}
                   animationEasing="ease-in-out"
                 />
               </LineChart>
@@ -441,9 +501,9 @@ const Dashboard = () => {
       </div>
 
       {/* Recent activity */}
-      <div className="bg-white rounded-2xl shadow-sm p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-medium text-gray-900">Recent Activity</h3>
+      <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <h3 className="text-base sm:text-lg font-medium text-gray-900">Recent Activity</h3>
           <button className="text-sm font-medium text-indigo-600 hover:text-indigo-800">
             View all
           </button>
@@ -452,19 +512,19 @@ const Dashboard = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Type
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   User ID
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Amount
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Date
                 </th>
               </tr>
@@ -473,27 +533,27 @@ const Dashboard = () => {
               {recentActivity.length > 0 ? (
                 recentActivity.map((activity) => (
                   <tr key={activity.id} className="hover:bg-gray-50 transition-colors duration-150">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         {activity.type === 'deposit' ? (
-                          <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
-                            <DollarSign className="h-4 w-4 text-indigo-600" />
+                          <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-indigo-100 flex items-center justify-center">
+                            <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-indigo-600" />
                           </div>
                         ) : (
-                          <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
-                            <CreditCard className="h-4 w-4 text-red-600" />
+                          <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-red-100 flex items-center justify-center">
+                            <CreditCard className="h-3 w-3 sm:h-4 sm:w-4 text-red-600" />
                           </div>
                         )}
-                        <span className="ml-3 text-sm font-medium text-gray-900 capitalize">{activity.type}</span>
+                        <span className="ml-2 sm:ml-3 text-xs sm:text-sm font-medium text-gray-900 capitalize">{activity.type}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
                       {activity.userId || 'N/A'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">
                       {formatCurrency(activity.amount || 0)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                       {activity.type === 'deposit' ? (
                         <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                           Completed
@@ -508,14 +568,14 @@ const Dashboard = () => {
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
                       {formatDate(activity.timestamp)}
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">
+                  <td colSpan="5" className="px-3 sm:px-6 py-3 sm:py-4 text-center text-xs sm:text-sm text-gray-500">
                     No recent activity
                   </td>
                 </tr>

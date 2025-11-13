@@ -173,27 +173,9 @@ const Layout = () => {
             </div>
             
             <div className="flex items-center space-x-4">
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  className="block w-64 pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                />
-              </div>
+             
               
-              <button className="p-1 text-gray-500 hover:text-gray-700 relative">
-                <Bell className="h-6 w-6" />
-                <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
-              </button>
-              
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
-                  <User className="h-5 w-5 text-indigo-600" />
-                </div>
-              </div>
+             
               
               <button
                 onClick={handleLogout}
